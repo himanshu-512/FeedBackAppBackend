@@ -1,26 +1,43 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const messageSchema = new mongoose.Schema(
   {
     channelId: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Channel",
       required: true,
-      index: true
+      index: true,
     },
+
     userId: {
-      type: String,
-      required: true
+      type: String, // anon user id
+      required: true,
+      index: true,
     },
+
     username: {
-      type: String,
-      required: true
+      type: String, // snapshot (anonymous name at send time)
+      required: true,
     },
+
     text: {
       type: String,
-      required: true
-    }
+      required: true,
+      maxlength: 500, // 🔥 safety
+      trim: true,
+    },
+
+    isEdited: {
+      type: Boolean,
+      default: false,
+    },
+
+    isDeleted: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model('Message', messageSchema);
+export default mongoose.model("Message", messageSchema);

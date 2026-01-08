@@ -1,6 +1,6 @@
-const jwt = require('jsonwebtoken');
+import { verify } from 'jsonwebtoken';
 
-module.exports.verifyJWT = (req, res, next) => {
+export function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -9,9 +9,9 @@ module.exports.verifyJWT = (req, res, next) => {
   }
 
   try {
-    jwt.verify(token, process.env.JWT_SECRET);
+    verify(token, process.env.JWT_SECRET);
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid token' });
   }
-};
+}

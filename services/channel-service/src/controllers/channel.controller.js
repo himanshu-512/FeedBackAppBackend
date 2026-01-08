@@ -1,44 +1,59 @@
-import Channel from '../models/Channel.model.js';
+import Channel from "../models/Channel.model.js";
 
 // GET /channels
 export const listChannels = async (req, res) => {
-  const channels = await Channel.find().sort({ createdAt: -1 });
-  res.json(channels);
+  try {
+    const channels = await Channel.find()
+      .sort({ createdAt: -1 })
+      .limit(50) // 🔥 safety
+      .lean();
+
+    res.json(channels);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch channels" });
+  }
 };
 
 // POST /channels
 export const createChannel = async (req, res) => {
-  const { name } = req.body;
-  const userId = req.headers['x-user-id'];
+  try {
+    const { name } = req.body;
+    const userId = req.headers["x-user-id"];
 
-  if (!name) {
-    return res.status(400).json({ message: 'Channel name required' });
+    if (!name) {
+      return res.status(400).json({ message: "Channel name required" });
+    }
+
+    const channel = await Channel.create({
+      name,
+      createdBy: userId,
+      members: [userId],
+    });
+
+    res.status(201).json(channel);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to create channel" });
   }
-
-  const channel = await Channel.create({
-    name,
-    createdBy: userId,
-    members: [userId]
-  });
-
-  res.status(201).json(channel);
 };
 
 // POST /channels/:id/join
 export const joinChannel = async (req, res) => {
-  const channelId = req.params.id;
-  const userId = req.headers['x-user-id'];
+  try {
+    const { id } = req.params;
+    const userId = req.headers["x-user-id"];
 
-  const channel = await Channel.findById(channelId);
+    const channel = await Channel.findByIdAndUpdate(
+      id,
+      { $addToSet: { members: userId } }, // 🔥 atomic & safe
+      { new: true }
+    );
 
-  if (!channel) {
-    return res.status(404).json({ message: 'Channel not found' });
+    if (!channel) {
+      return res.status(404).json({ message: "Channel not found" });
+    }
+
+    res.json({ message: "Joined channel successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to join channel" });
   }
-
-  if (!channel.members.includes(userId)) {
-    channel.members.push(userId);
-    await channel.save();
-  }
-
-  res.json({ message: 'Joined channel successfully' });
 };

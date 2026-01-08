@@ -1,22 +1,40 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
 const channelSchema = new mongoose.Schema(
   {
     name: {
       type: String,
       required: true,
-      trim: true
+      trim: true,
+      index: true, // 🔥 search ke liye
     },
+
+    description: {
+      type: String,
+      default: "",
+    },
+
     createdBy: {
-      type: String, // anonUserId from JWT
-      required: true
+      type: String, // anonUserId
+      required: true,
     },
+
     members: {
       type: [String], // anonUserIds
-      default: []
-    }
+      default: [],
+    },
+
+    isOfficial: {
+      type: Boolean,
+      default: false,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
   },
   { timestamps: true }
 );
 
-export default mongoose.model('Channel', channelSchema);
+export default mongoose.model("Channel", channelSchema);

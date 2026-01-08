@@ -33,6 +33,7 @@ app.get('/health', (req, res) => {
 // Routes
 app.use('/auth', authRoutes);
 app.use('/channels', channelRoutes);
+// app.use('/messages/:channelId', channelRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

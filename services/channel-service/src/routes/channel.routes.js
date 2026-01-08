@@ -7,8 +7,8 @@ import {
 
 const router = express.Router();
 
-router.get('/', listChannels);
-router.post('/', createChannel);
+router.get('/all', listChannels);
+router.post('/createChannel', createChannel);
 router.post('/:id/join', joinChannel);
 
 export default router;
