@@ -1,14 +1,14 @@
-const { createProxyMiddleware } = require('http-proxy-middleware');
-const router = require('express').Router();
-const { verifyJWT } = require('../middlewares/auth.middleware');
-
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import express from 'express'
+import verifyJWT  from '../middlewares/auth.middleware.js';
+const router = express.Router()
 router.use(
   '/',
-  verifyJWT,
+  // verifyJWT, // 🔥 MUST ENABLE
   createProxyMiddleware({
-    target: process.env.CHANNEL_SERVICE_URL,
+    target: process.env.CHANNEL_SERVICE_URL || 'http://localhost:4002',
     changeOrigin: true
   })
 );
 
-module.exports = router;
+export default router;

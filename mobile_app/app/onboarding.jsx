@@ -50,7 +50,7 @@ export default function Onboarding() {
 
       {/* BUTTON */}
       <Pressable
-        onPress={() => router.push("/anonymous")}
+        onPress={() => router.push("/login")}
         style={styles.btnWrap}
       >
         <LinearGradient

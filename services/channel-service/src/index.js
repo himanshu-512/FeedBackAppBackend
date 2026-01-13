@@ -8,6 +8,13 @@ import morgan from 'morgan';
 
 import connectDB from './config/db.js';
 import channelRoutes from './routes/channel.routes.js';
+// import { verifyJWT } from '../../api-gateway/src/middlewares/auth.middleware.js';
+
+import {
+  listChannels,
+  createChannel,
+  joinChannel
+} from '../src/controllers/channel.controller.js';
 
 const app = express();
 
@@ -24,7 +31,9 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Channel Service running' });
 });
 
-app.use('/channels', channelRoutes);
+// app.get('/channels', listChannels);
+// app.post('/:id/join', joinChannel);
+app.use('/',channelRoutes)
 
 const PORT = process.env.PORT || 4002;
 app.listen(PORT, () => {

@@ -5,9 +5,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-
+import connectDB from '../config/db.js';
 import authRoutes from './routes/auth.routes.js';
-
+connectDB();
 const app = express();
 
 app.use(cors());
@@ -19,7 +19,8 @@ app.get('/health', (req, res) => {
   res.json({ status: 'Auth Service running' });
 });
 
-app.use('/auth', authRoutes);
+// 🔥 IMPORTANT: no /auth prefix here
+app.use('/', authRoutes);
 
 const PORT = process.env.PORT || 4001;
 app.listen(PORT, () => {

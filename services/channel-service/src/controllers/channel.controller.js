@@ -39,12 +39,14 @@ export const createChannel = async (req, res) => {
 // POST /channels/:id/join
 export const joinChannel = async (req, res) => {
   try {
-    const { id } = req.params;
-    const userId = req.headers["x-user-id"];
+    const channelId = req.params.id;
+    const userId = req.user.userId; // JWT se aa raha hai
 
     const channel = await Channel.findByIdAndUpdate(
-      id,
-      { $addToSet: { members: userId } }, // 🔥 atomic & safe
+      channelId,
+      {
+        $addToSet: { members: userId }, // 🔥 duplicate safe
+      },
       { new: true }
     );
 
@@ -52,8 +54,13 @@ export const joinChannel = async (req, res) => {
       return res.status(404).json({ message: "Channel not found" });
     }
 
-    res.json({ message: "Joined channel successfully" });
+    res.json({
+      message: "Joined channel successfully",
+      membersCount: channel.members.length,
+      channel,
+    });
   } catch (err) {
+    console.error("JOIN CHANNEL ERROR:", err.message);
     res.status(500).json({ message: "Failed to join channel" });
   }
 };

@@ -10,21 +10,68 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { ip } from "../../mobile_app/services/ip";
 import TopBlob from "../components/TopBlob";
 import BottomBlob from "../components/BottomBlob";
+import { anonymousLogin } from "../services/auth";
+// import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { height } = Dimensions.get("window");
 const avatar = require("../assets/images/logo.png");
 
 export default function Anonymous() {
+  const [userId, setUserId] = useState(null);
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        setLoading(true);
+
+        const token = await AsyncStorage.getItem("token");
+console.log(token);
+console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
+
+        const res = await fetch(`http://10.192.36.156:3000/auth/me`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          throw new Error(data.message);
+        }
+
+        setUsername(data.username);
+        setUserId(data.userId);
+      } catch (err) {
+        console.error("Fetch profile error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
   const router = useRouter();
   const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setUsername("User_4566");
-    }, 500);
+    const login = async () => {
+      try {
+        const data = await anonymousLogin();
+        setUsername(data.username);
+      } catch (err) {
+        console.error("Anonymous login error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // login();
   }, []);
 
   return (
@@ -37,7 +84,7 @@ export default function Anonymous() {
 
       {/* Content */}
       <View style={styles.content}>
-        {/* 🔥 GRADIENT ELLIPSE AVATAR */}
+        {/* Gradient ellipse avatar */}
         <LinearGradient
           colors={["#7860E3", "#D66767"]}
           start={{ x: 0, y: 0 }}
@@ -52,20 +99,19 @@ export default function Anonymous() {
           <Text style={styles.pink}>anonymous</Text>
         </Text>
 
-        {/* ✅ IMPORTANT USERNAME BOX */}
+        {/* Username pill */}
         <View style={styles.usernameBox}>
           <Text style={styles.usernameText}>
-            {username || "Loading..."}
+            {loading ? "Generating..." : username}
           </Text>
         </View>
 
-        <Text style={styles.info}>
-          No profile • No identity • No tracking
-        </Text>
+        <Text style={styles.info}>No profile • No identity • No tracking</Text>
       </View>
 
       {/* Continue button */}
       <Pressable
+        disabled={loading}
         onPress={() => router.replace("/home")}
         style={styles.btnWrap}
       >
@@ -73,7 +119,7 @@ export default function Anonymous() {
           colors={["#7b6cff", "#e46b6b"]}
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 0 }}
-          style={styles.button}
+          style={[styles.button, loading && { opacity: 0.6 }]}
         >
           <Text style={styles.btnText}>Continue</Text>
         </LinearGradient>
@@ -81,6 +127,7 @@ export default function Anonymous() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -93,7 +140,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
 
-  /* 🔥 Gradient ellipse (same as onboarding) */
   avatarEllipse: {
     width: 120,
     height: 120,
@@ -101,9 +147,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 22,
-
-    elevation: 10, // Android shadow
-    shadowColor: "#000", // iOS shadow
+    elevation: 10,
+    shadowColor: "#000",
     shadowOpacity: 0.2,
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
@@ -129,14 +174,12 @@ const styles = StyleSheet.create({
     color: "#e46b6b",
   },
 
-  /* ✅ IMPORTANT USERNAME PILL */
   usernameBox: {
     paddingHorizontal: 22,
     paddingVertical: 10,
     borderRadius: 999,
     backgroundColor: "#f2f2f2",
     marginBottom: 10,
-
     borderWidth: 1,
     borderColor: "#e0e0e0",
   },

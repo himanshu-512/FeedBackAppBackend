@@ -1,41 +1,64 @@
-require('dotenv').config();
+import dotenv from "dotenv";
+dotenv.config();
 
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const morgan = require('morgan');
-const rateLimit = require('express-rate-limit');
-
-const authRoutes = require('./routes/auth.routes');
-const channelRoutes = require('./routes/channel.routes');
-
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import authRouter from '../src/routes/auth.routes.js'
+import channelRouter from '../src/routes/channel.routes.js'
+import messageRouter from '../src/routes/massage.routes.js'
 const app = express();
 
-// Middlewares
+// /* 🔥 AUTH PROXY — MUST BE FIRST */
+// app.use(
+//   "/auth",
+//   createProxyMiddleware({
+//     target: "http://127.0.0.1:4001", // Auth Service
+//     changeOrigin: true,
+//     pathRewrite: {
+//       "^/auth": "",
+//     },
+//     logLevel: "debug",
+
+//     onProxyReq(proxyReq, req) {
+//       console.log("🔁 PROXY → AUTH:", proxyReq.path);
+//     },
+
+//     onProxyRes(proxyRes) {
+//       console.log("✅ AUTH RESPONSE:", proxyRes.statusCode);
+//     },
+
+//     onError(err) {
+//       console.error("❌ PROXY ERROR:", err.message);
+//     },
+//   })
+// );
+
+app.use("/auth",authRouter)
+app.use("/channels",channelRouter)
+app.use("/messages",messageRouter)
+
+/* MIDDLEWARES (AFTER PROXY) */
 app.use(cors());
 app.use(helmet());
 app.use(express.json());
-app.use(morgan('dev'));
+app.use(morgan("dev"));
 
-// Rate limit
-app.use(
-  rateLimit({
-    windowMs: 1 * 60 * 1000,
-    max: 100
-  })
-);
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'API Gateway running' });
+/* LOGGER */
+app.use((req, res, next) => {
+  console.log("➡️ GATEWAY HIT:", req.method, req.originalUrl);
+  next();
 });
 
-// Routes
-app.use('/auth', authRoutes);
-app.use('/channels', channelRoutes);
-// app.use('/messages/:channelId', channelRoutes);
+/* HEALTH */
+app.get("/health", (req, res) => {
+  res.json({ status: "API Gateway running" });
+});
 
+/* START */
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`API Gateway running on port ${PORT}`);
+  console.log(`🚀 API Gateway running on port ${PORT}`);
 });

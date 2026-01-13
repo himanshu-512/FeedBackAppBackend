@@ -8,14 +8,36 @@ const chatSocket = (io) => {
       socket.join(channelId);
     });
 
-    socket.on("sendMessage", async (data) => {
-      try {
-        const message = await createMessage(data);
-        io.to(data.channelId).emit("newMessage", message);
-      } catch (err) {
-        socket.emit("errorMessage", err.message);
-      }
+    socket.on('sendMessage', async (data) => {
+  const { channelId, userId, username, text } = data;
+
+  if (!channelId || !userId || !text) return;
+
+  // 🔐 CHECK MEMBERSHIP
+  const channel = await channel.findById(channelId);
+
+  if (!channel) {
+    socket.emit("errorMessage", { message: "Channel not found" });
+    return;
+  }
+
+  if (!channel.members.includes(userId)) {
+    socket.emit("errorMessage", {
+      message: "You must join this channel to send messages"
     });
+    return;
+  }
+
+  // ✅ ALLOWED
+  const message = await message.create({
+    channelId,
+    userId,
+    username,
+    text
+  });
+
+  io.to(channelId).emit("newMessage", message);
+});
 
     socket.on("disconnect", () => {
       console.log("User disconnected:", socket.id);

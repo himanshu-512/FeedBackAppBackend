@@ -1,24 +1,40 @@
-import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-} from "react-native";
+import { View, Text, StyleSheet, FlatList } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChannelCard } from "../components/channelCard";
 import { useEffect, useState } from "react";
 import { getChannels } from "../services/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import ip from "../services/ip";
 
 export default function Home() {
-  
-const [channels, setChannels] = useState([]);
+  const [channels, setChannels] = useState([]);
+  const joinChannel = async (channelId) => {
+    try {
+      const token = await AsyncStorage.getItem("token");
 
-useEffect(() => {
-  getChannels()
-    .then(setChannels)
-    .catch(console.error);
-}, []);
+      await fetch(`http://${ip}:3000/channels/${channelId}/join`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      // 🔥 IMPORTANT: channels list refresh
+      const updatedChannels = await getChannels();
+      setChannels(updatedChannels);
+    } catch (err) {
+      console.log("JOIN ERROR:", err.message);
+    }
+  };
+  useEffect(() => {
+    getChannels()
+      .then((data) => {
+        // console.log("CHANNELS:", data);
+        setChannels(data); // ✅ IMPORTANT
+      })
+      .catch((err) => console.log("CHANNEL ERROR:", err.message));
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -46,13 +62,17 @@ useEffect(() => {
       {/* CHANNEL LIST */}
       <FlatList
         data={channels}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item._id} // ✅ FIX
         contentContainerStyle={styles.list}
-        renderItem={({ item }) => <ChannelCard item={item} />}
+        renderItem={({ item }) => (
+          <ChannelCard item={item} onJoin={joinChannel} />
+        )}
+        showsVerticalScrollIndicator={false}
       />
     </SafeAreaView>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
