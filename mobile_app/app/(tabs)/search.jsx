@@ -8,6 +8,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
+  Animated,
+  Keyboard,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Feather } from "@expo/vector-icons";
@@ -15,7 +18,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import { searchChannels } from "../../services/api";
 
-/* 🔹 TEMP DATA (ONLY FOR TRENDING UI) */
+/* 🔹 TEMP DATA */
 const TRENDING = [
   { _id: "1", name: "Tech Talk", icon: "💻" },
   { _id: "2", name: "Startup Ideas", icon: "🚀" },
@@ -32,6 +35,9 @@ export default function SearchScreen() {
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
 
+  /* 🔹 Animation */
+  const searchAnim = useState(new Animated.Value(0))[0];
+
   /* 🔍 BACKEND SEARCH */
   useEffect(() => {
     if (!query || query.length < 2) {
@@ -40,7 +46,6 @@ export default function SearchScreen() {
     }
 
     setLoading(true);
-
     const timer = setTimeout(async () => {
       try {
         const data = await searchChannels(query, category);
@@ -51,17 +56,39 @@ export default function SearchScreen() {
       } finally {
         setLoading(false);
       }
-    }, 400); // debounce
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [query, category]);
 
+  /* ⌨️ Keyboard Animation */
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", () => {
+      Animated.timing(searchAnim, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      Animated.timing(searchAnim, {
+        toValue: 0,
+        duration: 250,
+        useNativeDriver: false,
+      }).start();
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
   /* 💬 CARD */
   const renderCard = ({ item }) => (
     <Pressable
-      onPress={() =>
-        router.push(`/channels/${item._id}?name=${item.name}`)
-      }
+      onPress={() => router.push(`/channels/${item._id}?name=${item.name}`)}
       style={styles.card}
     >
       <View style={styles.iconWrap}>
@@ -75,7 +102,7 @@ export default function SearchScreen() {
         </Text>
       </View>
 
-      <Feather name="chevron-right" size={22} color="#aaa" />
+      <Feather name="chevron-right" size={20} color="#aaa" />
     </Pressable>
   );
 
@@ -97,8 +124,32 @@ export default function SearchScreen() {
         </Text>
       </LinearGradient>
 
-      {/* 🔍 SEARCH BAR */}
-      <View style={styles.searchWrap}>
+      {/* 🔍 SEARCH BAR WITH ANIMATION */}
+      <Animated.View
+        style={[
+          styles.searchWrap,
+          {
+            transform: [
+              {
+                translateY: searchAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [0, -10],
+                }),
+              },
+              {
+                scale: searchAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 1.03],
+                }),
+              },
+            ],
+            shadowOpacity: searchAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0.05, 0.15],
+            }),
+          },
+        ]}
+      >
         <Feather name="search" size={20} color="#777" />
 
         <TextInput
@@ -114,7 +165,7 @@ export default function SearchScreen() {
             <Feather name="x" size={18} color="#888" />
           </Pressable>
         )}
-      </View>
+      </Animated.View>
 
       {/* 🏷️ CATEGORY CHIPS */}
       <ScrollView
@@ -143,7 +194,16 @@ export default function SearchScreen() {
         ))}
       </ScrollView>
 
-      {/* 🔥 TRENDING (ONLY WHEN NOT SEARCHING) */}
+      {/* 🔄 LOADER */}
+      {loading && (
+        <ActivityIndicator
+          size="small"
+          color="#7860E3"
+          style={{ marginTop: 12 }}
+        />
+      )}
+
+      {/* 🔥 TRENDING */}
       {query.length === 0 && !loading && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>🔥 Trending Channels</Text>
@@ -173,8 +233,9 @@ export default function SearchScreen() {
           !loading &&
           query.length > 0 && (
             <View style={styles.empty}>
+              <Text style={{ fontSize: 40 }}>🔍</Text>
               <Text style={styles.emptyText}>
-                😕 No channels found
+                No channels found
               </Text>
               <Text style={styles.emptySub}>
                 Try searching something else
@@ -191,10 +252,9 @@ export default function SearchScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f9f9fb",
   },
 
-  /* HEADER */
   header: {
     paddingTop: 56,
     paddingBottom: 26,
@@ -215,16 +275,19 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
 
-  /* SEARCH */
   searchWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#fff",
     marginHorizontal: 16,
     marginTop: -20,
     paddingHorizontal: 14,
     borderRadius: 18,
     height: 52,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
   input: {
@@ -234,26 +297,30 @@ const styles = StyleSheet.create({
     color: "#000",
   },
 
-  /* CHIPS */
   chips: {
     paddingHorizontal: 16,
     marginTop: 14,
   },
 
   chip: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 999,
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 14,
     backgroundColor: "#f2f2f2",
-    marginRight: 10,
+    marginRight: 8,
   },
 
   chipActive: {
     backgroundColor: "#7860E3",
+    shadowColor: "#7860E3",
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
   chipText: {
-    fontWeight: "700",
+    fontWeight: "600",
+    fontSize: 13,
     color: "#333",
   },
 
@@ -261,7 +328,6 @@ const styles = StyleSheet.create({
     color: "#fff",
   },
 
-  /* SECTION */
   section: {
     paddingHorizontal: 16,
     paddingTop: 20,
@@ -273,14 +339,17 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  /* CARD */
   card: {
     flexDirection: "row",
     alignItems: "center",
     padding: 16,
     borderRadius: 18,
-    backgroundColor: "#f8f8f8",
+    backgroundColor: "#fff",
     marginBottom: 14,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
   },
 
   iconWrap: {
@@ -298,7 +367,7 @@ const styles = StyleSheet.create({
   },
 
   name: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: "800",
   },
 
@@ -308,7 +377,6 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
 
-  /* EMPTY */
   empty: {
     marginTop: 80,
     alignItems: "center",
@@ -318,6 +386,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     color: "#555",
+    marginTop: 6,
   },
 
   emptySub: {

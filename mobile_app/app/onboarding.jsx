@@ -15,36 +15,48 @@ import BottomBlob from "../components/BottomBlob";
 
 const { height } = Dimensions.get("window");
 const logo = require("../assets/images/logo.png");
+
 export default function Onboarding() {
   const router = useRouter();
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent />
 
-      {/* ✅ REAL TOP SVG BLOB */}
+      {/* TOP BLOB */}
       <TopBlob />
 
-    {/* CONTENT */}
-<View style={styles.content}>
-  {/* 🔥 GRADIENT ELLIPSE LOGO */}
-  <LinearGradient
-    colors={["#7860E3", "#D66767"]}
-    start={{ x: 0, y: 0 }}
-    end={{ x: 1, y: 1 }}
-    style={styles.logoEllipse}
-  >
-    <Image source={logo} style={styles.logoImage} />
-  </LinearGradient>
+      {/* CONTENT */}
+      <View style={styles.content}>
+        {/* LOGO */}
+        <LinearGradient
+          colors={["#7860E3", "#D66767"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.logoEllipse}
+        >
+          <Image source={logo} style={styles.logoImage} />
+        </LinearGradient>
 
-  <Text style={styles.title}>
-    <Text style={styles.purple}>FEEDBACK </Text>
-    <Text style={styles.pink}>CHAT</Text>
-  </Text>
+        {/* TITLE */}
+        <Text style={styles.title}>
+          <Text style={styles.purple}>FEEDBACK </Text>
+          <Text style={styles.pink}>CHAT</Text>
+        </Text>
 
-  <Text style={styles.subtitle}>Share honest feedback.</Text>
-  <Text style={styles.subtitle}>Stay anonymous.</Text>
-</View>
+        {/* SUBTITLES */}
+        <Text style={styles.subtitle}>
+          Share honest feedback.
+        </Text>
+        <Text style={[styles.subtitle, { marginTop: 4 }]}>
+          Stay anonymous.
+        </Text>
 
+        {/* TAGLINE */}
+        <Text style={styles.tagline}>
+          Real conversations without fear.
+        </Text>
+      </View>
 
       {/* BUTTON */}
       <Pressable
@@ -61,11 +73,12 @@ export default function Onboarding() {
         </LinearGradient>
       </Pressable>
 
-      {/* ✅ REAL BOTTOM SVG BLOB */}
+      {/* BOTTOM BLOB */}
       <BottomBlob />
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -74,37 +87,35 @@ const styles = StyleSheet.create({
 
   content: {
     alignItems: "center",
-    marginTop: height * 0.22,
+    marginTop: height * 0.18, // 👈 more responsive
   },
 
-logoEllipse: {
-  width: 110,
-  height: 110,
-  borderRadius: 65, // 👈 ellipse / circle
-  justifyContent: "center",
-  alignItems: "center",
-  marginBottom: 24,
+  logoEllipse: {
+    width: 110,
+    height: 110,
+    borderRadius: 65,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 26,
 
-  // Shadow for premium feel
-  elevation: 10, // Android
-  shadowColor: "#000", // iOS
-  shadowOpacity: 0.2,
-  shadowRadius: 12,
-  shadowOffset: { width: 0, height: 6 },
-},
+    // premium shadow
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+  },
 
-logoImage: {
-  width: 90,
-  height: 90,
-  resizeMode: "contain",
-},
-
-
+  logoImage: {
+    width: 90,
+    height: 90,
+    resizeMode: "contain",
+  },
 
   title: {
-    fontSize: 30,
-    fontWeight: "800",
-    marginBottom: 10,
+    fontSize: 34, // 👈 stronger hierarchy
+    fontWeight: "900",
+    marginBottom: 14,
   },
 
   purple: {
@@ -116,9 +127,15 @@ logoImage: {
   },
 
   subtitle: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
+    fontSize: 17,
+    fontWeight: "500",
+    color: "#444",
+  },
+
+  tagline: {
+    marginTop: 16,
+    fontSize: 14,
+    color: "#777",
   },
 
   btnWrap: {
@@ -132,6 +149,13 @@ logoImage: {
     paddingVertical: 16,
     borderRadius: 999,
     alignItems: "center",
+
+    // better button depth
+    elevation: 6,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 4 },
   },
 
   btnText: {

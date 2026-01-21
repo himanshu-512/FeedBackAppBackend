@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {ip} from "../services/ip";
+import { gateWay } from "./apiURL";
 
-const BASE_URL = `http://${ip}:3000`;
+const BASE_URL = gateWay;
 console.log("BASE_URL:", BASE_URL);
 
 // 🔐 helper
@@ -104,7 +105,7 @@ export const searchChannels = async (query, category) => {
   const token = await AsyncStorage.getItem("token");
   console.log(token);
 
-  const url = `http://${ip}:3000/channels/search?q=${encodeURIComponent(
+  const url = `${BASE_URL}/channels/search?q=${encodeURIComponent(
     query
   )}&category=${encodeURIComponent(category || "All")}`;
 

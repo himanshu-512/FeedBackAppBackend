@@ -1,7 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {ip} from "../services/ip";
+import { gateWay } from "./apiURL";
 
-const BASE_URL = `http://${ip}:3000`;
+const BASE_URL = gateWay;
 
 /* 🔑 ANONYMOUS LOGIN */
 export async function anonymousLogin() {
@@ -27,7 +28,7 @@ export async function anonymousLogin() {
 
 /* 📲 SEND OTP */
 export const sendOtp = async (phone) => {
-  const res = await fetch(`http://${ip}:3000/auth/send-otp`, {
+  const res = await fetch(`${BASE_URL}/auth/send-otp`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone }),

@@ -1,30 +1,22 @@
-import { View, Text, Image, StatusBar, Dimensions } from "react-native";
+import { View, Text, Image, StatusBar, StyleSheet, Dimensions } from "react-native";
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const { height } = Dimensions.get("window");
 
-export default function SplashScreen() {
+export default function Index() {
   const router = useRouter();
 
   useEffect(() => {
     const bootstrap = async () => {
-      // 👀 Splash visible for at least 2 sec
       await new Promise((res) => setTimeout(res, 2000));
 
       try {
         const token = await AsyncStorage.getItem("token");
-
-        if (token) {
-          // ✅ Already logged in
-          router.replace("/(tabs)/home");
-        } else {
-          // ❌ New user / logged out
-          router.replace("/onboarding");
-        }
+        if (token) router.replace("/(tabs)/home");
+        else router.replace("/onboarding");
       } catch (err) {
-        // fallback safety
         router.replace("/onboarding");
       }
     };
@@ -33,24 +25,74 @@ export default function SplashScreen() {
   }, []);
 
   return (
-    <View className="flex-1 bg-white items-center justify-center">
-      <StatusBar barStyle="dark-content" translucent />
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-      {/* Push content slightly upward */}
-      <View style={{ marginTop: -height * 0.05 }} className="items-center">
-        {/* Logo */}
+      {/* Logo Container */}
+      <View style={styles.logoWrapper}>
         <Image
           source={require("../assets/images/logo.png")}
-          className="w-32 h-32 mb-5"
+          style={styles.logo}
           resizeMode="contain"
         />
-
-        {/* App Name */}
-        <Text className="text-3xl font-extrabold tracking-wider">
-          <Text className="text-purple-500">FEEDBACK </Text>
-          <Text className="text-pink-500">CHAT</Text>
-        </Text>
       </View>
+
+      {/* App Name */}
+      <View style={styles.textRow}>
+        <Text style={[styles.title, styles.purple]}>FEEDBACK </Text>
+        <Text style={[styles.title, styles.pink]}>CHAT</Text>
+      </View>
+
+      {/* Tagline */}
+      <Text style={styles.tagline}>
+        Smart feedback. Better conversations.
+      </Text>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#f8f9ff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  logoWrapper: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: "#ffffff",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 15,
+    elevation: 8,
+    marginBottom: 25,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+  },
+  textRow: {
+    flexDirection: "row",
+    marginBottom: 6,
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: "800",
+    letterSpacing: 1.2,
+  },
+  purple: {
+    color: "#6d28d9",
+  },
+  pink: {
+    color: "#db2777",
+  },
+  tagline: {
+    fontSize: 14,
+    color: "#6b7280",
+    letterSpacing: 0.5,
+  },
+});

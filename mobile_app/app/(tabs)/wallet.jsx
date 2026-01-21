@@ -59,10 +59,13 @@ export default function WalletScreen() {
         end={{ x: 1, y: 1 }}
         style={styles.header}
       >
-        <Text style={styles.headerTitle}>Wallet</Text>
-        <Text style={styles.headerSub}>
-          Your anonymous earnings
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>Wallet</Text>
+          <Text style={styles.headerSub}>
+            Your anonymous earnings
+          </Text>
+        </View>
+        <Text style={styles.headerIcon}>💳</Text>
       </LinearGradient>
 
       {/* 🔥 CONTENT */}
@@ -83,7 +86,7 @@ export default function WalletScreen() {
           </Text>
 
           <View style={styles.statsRow}>
-            <View style={styles.statBox}>
+            <View style={[styles.statBox, styles.todayBox]}>
               <Text style={styles.statLabel}>Today</Text>
               <Text style={styles.statValue}>
                 ₹{summary?.today ?? 0}
@@ -106,61 +109,78 @@ export default function WalletScreen() {
           </Text>
 
           {loading && (
-            <Text style={{ textAlign: "center", marginTop: 10 }}>
+            <Text style={styles.centerText}>
               Loading wallet…
             </Text>
           )}
 
           {!loading && transactions.length === 0 && (
-            <Text style={{ textAlign: "center", color: "#777" }}>
-              No transactions yet
-            </Text>
-          )}
-
-          {transactions.map((tx) => (
-            <View key={tx._id} style={styles.tx}>
-              <View style={styles.txLeft}>
-                <View style={styles.txIcon}>
-                  <Text style={styles.txEmoji}>💬</Text>
-                </View>
-                <View>
-                  <Text style={styles.txTitle}>
-                    {tx.title}
-                  </Text>
-                  <Text style={styles.txSub}>
-                    {new Date(
-                      tx.createdAt
-                    ).toDateString()} · {tx.channel}
-                  </Text>
-                </View>
-              </View>
-
-              <Text
-                style={[
-                  styles.txAmount,
-                  {
-                    color:
-                      tx.type === "credit"
-                        ? "green"
-                        : "red",
-                  },
-                ]}
-              >
-                {tx.type === "credit" ? "+" : "-"}₹{tx.amount}
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyEmoji}>💸</Text>
+              <Text style={styles.emptyTitle}>
+                No earnings yet
+              </Text>
+              <Text style={styles.emptySub}>
+                Start giving feedback to earn!
               </Text>
             </View>
-          ))}
+          )}
+
+          {transactions.map((tx) => {
+            const isCredit = tx.type === "credit";
+
+            return (
+              <View key={tx._id} style={styles.tx}>
+                <View style={styles.txLeft}>
+                  <View
+                    style={[
+                      styles.txIcon,
+                      {
+                        backgroundColor: isCredit
+                          ? "#e6f9f0"
+                          : "#fdecec",
+                      },
+                    ]}
+                  >
+                    <Text style={styles.txEmoji}>
+                      {isCredit ? "➕" : "➖"}
+                    </Text>
+                  </View>
+                  <View>
+                    <Text style={styles.txTitle}>
+                      {tx.title}
+                    </Text>
+                    <Text style={styles.txSub}>
+                      {new Date(
+                        tx.createdAt
+                      ).toDateString()} · {tx.channel}
+                    </Text>
+                  </View>
+                </View>
+
+                <Text
+                  style={[
+                    styles.txAmount,
+                    {
+                      color: isCredit
+                        ? "#16a34a"
+                        : "#dc2626",
+                    },
+                  ]}
+                >
+                  {isCredit ? "+" : "-"}₹{tx.amount}
+                </Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* 🚫 WITHDRAW */}
-        <LinearGradient
-          colors={["#7860E3", "#D66767"]}
-          style={styles.withdrawBtn}
-        >
+        <View style={styles.withdrawBtn}>
           <Text style={styles.withdrawText}>
-            Withdraw (Coming Soon)
+            Withdraw — Coming Soon
           </Text>
-        </LinearGradient>
+        </View>
 
         <Text style={styles.note}>
           Withdrawals will be enabled after MVP
@@ -170,11 +190,11 @@ export default function WalletScreen() {
   );
 }
 
-/* 🎨 STYLES (UNCHANGED) */
+/* 🎨 STYLES */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f6f6f6",
+    backgroundColor: "#f9f9fb",
   },
 
   header: {
@@ -183,6 +203,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 26,
     borderBottomRightRadius: 26,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
 
   headerTitle: {
@@ -195,6 +218,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
     color: "rgba(255,255,255,0.85)",
     fontSize: 15,
+  },
+
+  headerIcon: {
+    fontSize: 28,
   },
 
   scrollView: {
@@ -225,6 +252,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 32,
     fontWeight: "900",
+    letterSpacing: 0.5,
   },
 
   currency: {
@@ -243,6 +271,10 @@ const styles = StyleSheet.create({
     backgroundColor: "#f4f4f4",
     borderRadius: 14,
     padding: 12,
+  },
+
+  todayBox: {
+    backgroundColor: "#ede9fe",
   },
 
   statLabel: {
@@ -267,6 +299,32 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
 
+  centerText: {
+    textAlign: "center",
+    marginTop: 10,
+  },
+
+  emptyState: {
+    alignItems: "center",
+    marginTop: 30,
+  },
+
+  emptyEmoji: {
+    fontSize: 40,
+  },
+
+  emptyTitle: {
+    marginTop: 10,
+    fontSize: 18,
+    fontWeight: "800",
+  },
+
+  emptySub: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 4,
+  },
+
   tx: {
     backgroundColor: "#fff",
     borderRadius: 16,
@@ -287,13 +345,12 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: "#eae6ff",
     justifyContent: "center",
     alignItems: "center",
   },
 
   txEmoji: {
-    fontSize: 17,
+    fontSize: 16,
   },
 
   txTitle: {
@@ -317,7 +374,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 999,
     alignItems: "center",
-    opacity: 0.5,
+    backgroundColor: "#ccc",
   },
 
   withdrawText: {

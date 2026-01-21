@@ -1,0 +1,1 @@
+export const gateWay = "https://feedbackappbackenddeploy-4.onrender.com";

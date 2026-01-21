@@ -1,7 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import ip from "./ip"; // tumhara existing ip file
-
-const BASE_URL = `http://${ip}:3003/wallet`;
+import { gateWay } from "./apiURL";
+const BASE_URL = gateWay;
 
 async function authFetch(url) {
   const token = await AsyncStorage.getItem("token");
@@ -21,7 +21,7 @@ async function authFetch(url) {
 }
 
 export const getWalletSummary = () =>
-  authFetch(`${BASE_URL}/summary`);
+  authFetch(`${BASE_URL}/wallet/summary`);
 
 export const getWalletTransactions = () =>
-  authFetch(`${BASE_URL}/transactions`);
+  authFetch(`${BASE_URL}/wallet/transactions`);

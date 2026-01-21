@@ -66,19 +66,13 @@ export default function SettingsScreen() {
         <Text style={styles.headerSub}>Manage your account</Text>
       </LinearGradient>
 
-      {/* 🔥 CONTENT */}
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         style={styles.scrollView}
       >
-        {/* 👤 PROFILE CARD */}
+        {/* 👤 PROFILE */}
         <View style={styles.profileCard}>
-          <LinearGradient
-            colors={["#ffffff", "#ffffff"]}
-            style={styles.cardTop}
-          />
-
           <View style={styles.avatarWrap}>
             {avatar ? (
               <Image source={{ uri: avatar }} style={styles.avatarImg} />
@@ -97,7 +91,7 @@ export default function SettingsScreen() {
           </Text>
         </View>
 
-        {/* ⚙️ SETTINGS LIST */}
+        {/* ⚙️ SETTINGS */}
         <View style={styles.list}>
           <Pressable style={styles.item} onPress={leaveAllChannels}>
             <View style={styles.iconWrap}>
@@ -137,33 +131,35 @@ export default function SettingsScreen() {
   );
 }
 
-/* 🎨 FINAL STYLES (Wallet-consistent) */
+/* 🎨 REFINED STYLES */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f6f6f6",
+    backgroundColor: "#f9f9fb",
   },
 
   header: {
     paddingTop: 56,
-    paddingBottom: 26,
+    paddingBottom: 28,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 26,
-    borderBottomRightRadius: 26,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
   },
 
   headerTitle: {
     color: "#fff",
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: "900",
   },
-headerSub : {
-    marginTop: 4,
+
+  headerSub: {
+    marginTop: 6,
     color: "rgba(255,255,255,0.85)",
     fontSize: 15,
   },
+
   scrollView: {
-    marginTop: -20, // 🔥 blend with header
+    marginTop: -18,
   },
 
   scroll: {
@@ -173,42 +169,32 @@ headerSub : {
   profileCard: {
     marginHorizontal: 20,
     backgroundColor: "#fff",
-    borderRadius: 22,
-    paddingTop: 60,
-    paddingBottom: 26,
+    borderRadius: 24,
+    paddingVertical: 28,
     alignItems: "center",
+    marginBottom: 24,
 
     elevation: 8,
     shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-  },
-
-  cardTop: {
-    position: "absolute",
-    top: 0,
-    height: 50,
-    width: "100%",
-    borderTopLeftRadius: 22,
-    borderTopRightRadius: 22,
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
   },
 
   avatarWrap: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: "#f0f0f0",
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: "#f1f1f5",
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -45,
-    borderWidth: 4,
-    borderColor: "#cecdcd",
+    borderWidth: 3,
+    borderColor: "#7860E3",
   },
 
   avatarImg: {
     width: "100%",
     height: "100%",
-    borderRadius: 45,
+    borderRadius: 46,
   },
 
   avatarText: {
@@ -218,7 +204,7 @@ headerSub : {
   },
 
   username: {
-    marginTop: 10,
+    marginTop: 12,
     fontSize: 22,
     fontWeight: "800",
   },
@@ -230,29 +216,28 @@ headerSub : {
   },
 
   list: {
-    marginTop: 26,
     paddingHorizontal: 20,
   },
 
   item: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 16,
-    borderRadius: 18,
+    padding: 18,
+    borderRadius: 20,
     backgroundColor: "#fff",
-    marginBottom: 14,
+    marginBottom: 16,
 
-    elevation: 3,
+    elevation: 4,
     shadowColor: "#000",
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 10,
   },
 
   iconWrap: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "#eae6ff",
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#f1f0ff",
     justifyContent: "center",
     alignItems: "center",
     marginRight: 14,

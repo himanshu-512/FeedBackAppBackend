@@ -5,8 +5,7 @@ export function ChannelCard({ item, isJoined, onJoin }) {
   const router = useRouter();
 
   return (
-    <View style={{ marginBottom: 16 }}>
-      {/* CARD */}
+    <View style={{ marginBottom: 14 }}>
       <Pressable
         disabled={!isJoined}
         onPress={() =>
@@ -15,95 +14,124 @@ export function ChannelCard({ item, isJoined, onJoin }) {
             params: { name: item.name },
           })
         }
-        android_ripple={isJoined ? { color: "#ddd" } : null}
+        android_ripple={isJoined ? { color: "#ccc" } : null}
+        style={styles.card}
       >
-        <View style={styles.card}>
-          <View style={styles.left}>
-            <Text style={styles.title}>{item.name}</Text>
-            <Text style={styles.desc}>{item.description}</Text>
+        {/* LEFT CONTENT */}
+        <View style={styles.left}>
+          <Text style={styles.title}>{item.name}</Text>
 
-            <Text style={styles.members}>
-              👥 {item.members.length} members
+          {item.description && (
+            <Text style={styles.desc} numberOfLines={2}>
+              {item.description}
             </Text>
+          )}
 
-            {/* JOIN / JOINED */}
-            {!isJoined ? (
-              <Pressable onPress={() => onJoin(item._id)}>
-                <Text style={styles.join}>Join</Text>
-              </Pressable>
-            ) : (
-              <Text style={styles.joined}>Joined</Text>
-            )}
-          </View>
+          <Text style={styles.members}>
+            👥 {item.members.length} members
+          </Text>
 
-          <View
-            style={[
-              styles.iconWrap,
-              { backgroundColor: item.color },
-            ]}
-          >
-            <Text style={styles.icon}>{item.icon}</Text>
-          </View>
+          {!isJoined ? (
+            <Pressable
+              onPress={() => onJoin(item._id)}
+              style={styles.joinBtn}
+            >
+              <Text style={styles.joinText}>Join</Text>
+            </Pressable>
+          ) : (
+            <View style={styles.joinedBadge}>
+              <Text style={styles.joinedText}>Joined</Text>
+            </View>
+          )}
+        </View>
+
+        {/* ICON */}
+        <View
+          style={[
+            styles.iconWrap,
+            { backgroundColor: item.color || "#dcd6ff" },
+          ]}
+        >
+          <Text style={styles.icon}>
+            {item.icon || "💬"}
+          </Text>
         </View>
       </Pressable>
     </View>
   );
 }
 
-
 const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
-    backgroundColor: "#e5e5e5",
-    borderRadius: 20,
-    padding: 18,
-    marginBottom: 16,
+    backgroundColor: "#e5e5e59c",   // 👈 as you wanted
+    borderRadius: 18,
+    padding: 16,
+    alignItems: "center",
   },
+
   left: {
     flex: 1,
+    paddingRight: 12,
   },
+
   title: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: "800",
+    color: "#111",
   },
+
   desc: {
-    fontSize: 15,
+    fontSize: 14,
     color: "#444",
     marginVertical: 6,
   },
-  activeRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 6,
-  },
-  userIcon: {
-    fontSize: 16,
-    marginRight: 6,
-  },
-  active: {
-    fontSize: 14,
-    color: "#333",
+
+  members: {
+    fontSize: 13,
+    color: "#555",
     fontWeight: "600",
   },
+
+  joinBtn: {
+    marginTop: 10,
+    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 10,
+    backgroundColor: "#7860E3",
+  },
+
+  joinText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+
+  joinedBadge: {
+    marginTop: 10,
+    backgroundColor: "#d4f3e3",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
+    alignSelf: "flex-start",
+  },
+
+  joinedText: {
+    fontSize: 12,
+    color: "#1f9d55",
+    fontWeight: "700",
+  },
+
   iconWrap: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 54,
+    height: 54,
+    borderRadius: 27,
     justifyContent: "center",
     alignItems: "center",
   },
-  icon: {
-    fontSize: 30,
-  },
-  join: {
-    marginTop: 8,
-    color: "#7860E3",
-    fontWeight: "800",
-  },
 
-  joined: {
-    marginTop: 8,
-    color: "green",
-    fontWeight: "800",
+  icon: {
+    fontSize: 26,
   },
 });

@@ -5,25 +5,28 @@ import {
   Pressable,
   StyleSheet,
   StatusBar,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { PhoneAuthProvider, signInWithCredential } from "firebase/auth";
 
-import { auth } from "../services/firebase";
-import ip from "../services/ip";
 import { verifyOtp } from "../services/auth";
+import TopBlob from "../components/TopBlob";
+import BottomBlob from "../components/BottomBlob";
+
 export default function OTP() {
   const router = useRouter();
-  const { phone, verificationId } = useLocalSearchParams(); // ✅ FIXED
+  const { phone } = useLocalSearchParams();
 
   const [otp, setOtp] = useState("");
   const [loading, setLoading] = useState(false);
 
   const verifyOTP = async () => {
     const phone = await AsyncStorage.getItem("otp_phone");
+
     if (otp.length !== 6) {
       alert("Enter 6 digit OTP");
       return;
@@ -47,70 +50,103 @@ export default function OTP() {
   };
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
+      <View style={styles.container}>
+        <TopBlob />
+        <StatusBar barStyle="dark-content" />
 
-      <Text style={styles.title}>Verify OTP</Text>
-      <Text style={styles.subtitle}>OTP sent to +91 {phone}</Text>
-
-      <TextInput
-        value={otp}
-        onChangeText={setOtp}
-        keyboardType="number-pad"
-        maxLength={6}
-        placeholder="Enter OTP"
-        style={styles.otpInput}
-      />
-
-      <Pressable onPress={verifyOTP} disabled={loading}>
-        <LinearGradient
-          colors={["#7860E3", "#D66767"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={styles.button}
-        >
-          <Text style={styles.btnText}>
-            {loading ? "Verifying..." : "Verify & Continue"}
+        {/* CONTENT */}
+        <View style={styles.content}>
+          <Text style={styles.welcome}>Verify OTP 🔐</Text>
+          <Text style={styles.subtitle}>
+            Enter the code sent to your phone
           </Text>
-        </LinearGradient>
-      </Pressable>
-    </View>
+
+          {/* OTP INPUT */}
+          <TextInput
+            value={otp}
+            onChangeText={setOtp}
+            keyboardType="number-pad"
+            maxLength={6}
+            placeholder="Enter OTP"
+            style={styles.otpInput}
+            placeholderTextColor="#999"
+          />
+
+          {/* BUTTON */}
+          <Pressable
+            onPress={verifyOTP}
+            disabled={loading}
+            style={{ opacity: loading ? 0.6 : 1 }}
+          >
+            <LinearGradient
+              colors={["#7860E3", "#D66767"]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.button}
+            >
+              <Text style={styles.btnText}>
+                {loading ? "Verifying..." : "Verify & Continue"}
+              </Text>
+            </LinearGradient>
+          </Pressable>
+        </View>
+
+        <BottomBlob />
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
-/* 🎨 STYLES — UNCHANGED */
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    justifyContent: "center",
+    paddingHorizontal: 24,
     backgroundColor: "#fff",
   },
-  title: {
+
+  content: {
+    marginTop: 180,
+  },
+
+  welcome: {
     fontSize: 32,
     fontWeight: "900",
-    marginBottom: 10,
+    marginBottom: 6,
   },
+
   subtitle: {
     fontSize: 16,
     color: "#555",
     marginBottom: 30,
   },
+
   otpInput: {
     fontSize: 22,
-    letterSpacing: 12,
+    letterSpacing: 10,
     textAlign: "center",
-    borderWidth: 1,
-    borderColor: "#ddd",
+    backgroundColor: "#f3f4f6",
     borderRadius: 14,
     paddingVertical: 16,
     marginBottom: 30,
+    color: "#000",
   },
+
   button: {
     paddingVertical: 16,
     borderRadius: 30,
     alignItems: "center",
+
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 3 },
   },
+
   btnText: {
     color: "#fff",
     fontSize: 18,

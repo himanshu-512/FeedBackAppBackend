@@ -18,9 +18,11 @@ import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from "expo-haptics";
 
 import { getMessages } from "../../services/api";
-import {ip} from "../../services/ip";
+import { gateWay } from "../../services/apiURL";
 
-/* 🔓 PURE JS JWT DECODE (NO LIB) */
+const BASE_URL = gateWay;
+
+/* 🔓 PURE JS JWT DECODE */
 const decodeJWT = (token) => {
   try {
     const base64Url = token.split(".")[1];
@@ -61,20 +63,17 @@ export default function ChannelChat() {
     loadUser();
   }, []);
 
-  /* 🔐 CHECK MEMBERSHIP FROM BACKEND */
+  /* 🔐 CHECK MEMBERSHIP */
   useEffect(() => {
     const checkMembership = async () => {
       try {
         const token = await AsyncStorage.getItem("token");
 
-        const res = await fetch(
-          `http://${ip}:3000/channels/${channelId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
+        const res = await fetch(`${BASE_URL}/channels/${channelId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
 
         const data = await res.json();
 
@@ -91,12 +90,10 @@ export default function ChannelChat() {
       }
     };
 
-    if (userId) {
-      checkMembership();
-    }
+    if (userId) checkMembership();
   }, [userId, channelId]);
 
-  /* 📥 LOAD OLD MESSAGES (ONLY IF MEMBER) */
+  /* 📥 LOAD MESSAGES */
   useEffect(() => {
     if (!isMember) return;
 
@@ -107,11 +104,11 @@ export default function ChannelChat() {
       );
   }, [channelId, isMember]);
 
-  /* 🔌 SOCKET CONNECT (ONLY IF MEMBER) */
+  /* 🔌 SOCKET */
   useEffect(() => {
     if (!userId || !isMember) return;
 
-    socketRef.current = io(`http://${ip}:3000`, {
+    socketRef.current = io(`${BASE_URL}`, {
       transports: ["websocket"],
       auth: { userId },
     });
@@ -178,6 +175,11 @@ export default function ChannelChat() {
   const renderItem = ({ item }) => {
     const isMe = item.userId === userId;
 
+    const time = new Date(item.createdAt || Date.now()).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
     return (
       <View
         style={[
@@ -200,6 +202,8 @@ export default function ChannelChat() {
           <Text style={styles.messageText}>
             {item.isDeleted ? "Message deleted" : item.text}
           </Text>
+
+          <Text style={styles.time}>{time}</Text>
         </View>
       </View>
     );
@@ -235,7 +239,7 @@ export default function ChannelChat() {
 
       {/* ✍️ TYPING */}
       {typingUser && (
-        <Text style={styles.typing}>Someone is typing…</Text>
+        <Text style={styles.typing}>💬 Someone is typing…</Text>
       )}
 
       {/* ⌨️ INPUT */}
@@ -258,7 +262,10 @@ export default function ChannelChat() {
         <Pressable onPress={sendMessage}>
           <LinearGradient
             colors={["#7860E3", "#D66767"]}
-            style={styles.sendBtn}
+            style={[
+              styles.sendBtn,
+              { opacity: input.trim() ? 1 : 0.4 },
+            ]}
           >
             <Text style={styles.sendText}>➤</Text>
           </LinearGradient>
@@ -272,7 +279,7 @@ export default function ChannelChat() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#f9f9fb",
   },
 
   header: {
@@ -281,7 +288,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomLeftRadius: 22,
     borderBottomRightRadius: 22,
-    elevation: 8,
   },
 
   channelLabel: {
@@ -311,12 +317,12 @@ const styles = StyleSheet.create({
   },
 
   myBubble: {
-    backgroundColor: "#7860E3",
+    backgroundColor: "#7feceb7d",
     borderTopRightRadius: 4,
   },
 
   otherBubble: {
-    backgroundColor: "#f2f2f2",
+    backgroundColor: "#e5e7eb",
     borderTopLeftRadius: 4,
   },
 
@@ -331,6 +337,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     color: "#000",
+  },
+
+  time: {
+    fontSize: 10,
+    color: "#888",
+    alignSelf: "flex-end",
+    marginTop: 4,
   },
 
   typing: {

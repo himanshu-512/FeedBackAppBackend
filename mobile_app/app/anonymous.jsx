@@ -6,32 +6,39 @@ import {
   StatusBar,
   StyleSheet,
   Dimensions,
+  Animated,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ip } from "../../mobile_app/services/ip";
 import TopBlob from "../components/TopBlob";
 import BottomBlob from "../components/BottomBlob";
 import { anonymousLogin } from "../services/auth";
-// import AsyncStorage from "@react-native-async-storage/async-storage";
+import { gateWay } from "../services/apiURL";
 
+const BASE_URL = gateWay;
 const { height } = Dimensions.get("window");
 const avatar = require("../assets/images/hacker.png");
 
 export default function Anonymous() {
+  const router = useRouter();
   const [userId, setUserId] = useState(null);
+  const [username, setUsername] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(0.9)).current;
+
+  /* 🔐 FETCH PROFILE */
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
 
         const token = await AsyncStorage.getItem("token");
-console.log(token);
-console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
 
-        const res = await fetch(`http://${ip}:3000/auth/me`, {
+        const res = await fetch(`${BASE_URL}/auth/me`, {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -45,6 +52,20 @@ console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
 
         setUsername(data.username);
         setUserId(data.userId);
+
+        // Animate username reveal
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(scaleAnim, {
+            toValue: 1,
+            friction: 6,
+            useNativeDriver: true,
+          }),
+        ]).start();
       } catch (err) {
         console.error("Fetch profile error:", err);
       } finally {
@@ -53,25 +74,6 @@ console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
     };
 
     fetchProfile();
-  }, []);
-
-  const router = useRouter();
-  const [username, setUsername] = useState("");
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const login = async () => {
-      try {
-        const data = await anonymousLogin();
-        setUsername(data.username);
-      } catch (err) {
-        console.error("Anonymous login error:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // login();
   }, []);
 
   return (
@@ -99,14 +101,35 @@ console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
           <Text style={styles.pink}>anonymous</Text>
         </Text>
 
-        {/* Username pill */}
-        <View style={styles.usernameBox}>
+        {/* Username pill (Animated) */}
+        <Animated.View
+          style={[
+            styles.usernameBox,
+            {
+              opacity: fadeAnim,
+              transform: [{ scale: scaleAnim }],
+            },
+          ]}
+        >
           <Text style={styles.usernameText}>
             {loading ? "Generating..." : username}
           </Text>
-        </View>
+        </Animated.View>
 
-        <Text style={styles.info}>No profile • No identity • No tracking</Text>
+        {/* Change username */}
+        {!loading && (
+          <Pressable onPress={() => alert("Username change coming soon!")}>
+            <Text style={styles.change}>Change username</Text>
+          </Pressable>
+        )}
+
+        {/* Trust messaging */}
+        <Text style={styles.info}>
+          No profile • No identity • No tracking
+        </Text>
+        <Text style={styles.trust}>
+          We don’t store personal data.
+        </Text>
       </View>
 
       {/* Continue button */}
@@ -121,7 +144,7 @@ console.log("PROFILE URL:", `http://${ip}:3000/auth/me`);
           end={{ x: 1, y: 0 }}
           style={[styles.button, loading && { opacity: 0.6 }]}
         >
-          <Text style={styles.btnText}>Continue</Text>
+          <Text style={styles.btnText}>Start Chatting</Text>
         </LinearGradient>
       </Pressable>
     </View>
@@ -136,7 +159,7 @@ const styles = StyleSheet.create({
 
   content: {
     alignItems: "center",
-    marginTop: height * 0.22,
+    marginTop: height * 0.18, // more responsive
     paddingHorizontal: 24,
   },
 
@@ -179,9 +202,15 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 999,
     backgroundColor: "#f2f2f2",
-    marginBottom: 10,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: "#e0e0e0",
+
+    // Glow effect
+    shadowColor: "#7860E3",
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
   },
 
   usernameText: {
@@ -191,6 +220,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
+  change: {
+    color: "#7860E3",
+    fontWeight: "700",
+    marginBottom: 10,
+  },
+
   info: {
     fontSize: 16,
     color: "#444",
@@ -198,9 +233,16 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
 
+  trust: {
+    fontSize: 14,
+    color: "#777",
+    marginTop: 4,
+    textAlign: "center",
+  },
+
   btnWrap: {
     position: "absolute",
-    bottom: height * 0.22,
+    bottom: height * 0.18,
     left: 24,
     right: 24,
   },
