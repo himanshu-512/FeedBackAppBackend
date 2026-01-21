@@ -11,9 +11,6 @@ import {
 import { useState, useRef } from "react";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
-import { FirebaseRecaptchaVerifierModal } from "expo-firebase-recaptcha";
-
-import { auth, firebaseConfig } from "../services/firebase";
 import TopBlob from "../components/TopBlob";
 import BottomBlob from "../components/BottomBlob";
 import { sendOtp } from "../services/auth";
@@ -22,7 +19,6 @@ export default function Login() {
   const router = useRouter();
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
-  const recaptchaVerifier = useRef(null);
 
   const sendOTP = async () => {
     if (phone.length !== 10) {
@@ -48,10 +44,6 @@ export default function Login() {
     >
       <View style={styles.container}>
         {/* RECAPTCHA */}
-        <FirebaseRecaptchaVerifierModal
-          ref={recaptchaVerifier}
-          firebaseConfig={firebaseConfig}
-        />
 
         <TopBlob />
         <StatusBar barStyle="dark-content" />
