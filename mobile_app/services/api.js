@@ -54,31 +54,32 @@ export async function getChannels() {
 //   return res.json();
 // }
 
-export async function getMessages(channelId) {
-  console.log(channelId);
+export async function getMessages(channelId, before = null) {
   const token = await AsyncStorage.getItem("token");
-  console.log(token);
-  const userId = await AsyncStorage.getItem("userId");
+console.log(token);
+  const params = new URLSearchParams();
+  params.append("limit", "50");
+  if (before) params.append("before", before);
 
   const res = await fetch(
-    `${BASE_URL}/messages/messages/${channelId}`,
+    `${BASE_URL}/messages/messages/${channelId}?${params.toString()}`,
     {
       headers: {
-        Authorization: `Bearer ${token}`, // optional
-        "x-user-id": userId,              // 🔥 REQUIRED
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
     }
   );
-  // console.log("GET MESSAGES:", res);
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
+  const data = await res.json(); // 👈 this is ARRAY
 
-  return res.json();
+  return {
+    messages: data,        // ✅ wrap here
+    hasMore: data.length === 50, // simple pagination flag
+  };
 }
+
+
 
 
 /* ================= AUTH ================= */
@@ -117,6 +118,28 @@ export const searchChannels = async (query, category) => {
 
   if (!res.ok) {
     throw new Error("Search failed");
+  }
+
+  return res.json();
+};
+export const fetchProfile = async () => {
+  const token = await AsyncStorage.getItem("token");
+
+  if (!token) {
+    throw new Error("No auth token found");
+  }
+
+  const res = await fetch(`${BASE_URL}/profile`, {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  });
+
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.message || "Failed to load profile");
   }
 
   return res.json();

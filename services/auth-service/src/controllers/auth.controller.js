@@ -145,7 +145,6 @@ export const sendOtp = async (req, res) => {
 
     const data = await response.json();
 
-    console.log("RAW NINZA RESPONSE:", data);
 
     // 🔥 UNIVERSAL SUCCESS CHECK
     let parsedResponse = null;
@@ -176,7 +175,6 @@ export const sendOtp = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("SEND OTP ERROR:", err);
     return res.status(500).json({
       success: false,
       message: "Server error while sending OTP",
@@ -188,7 +186,6 @@ export const sendOtp = async (req, res) => {
 export const verifyOtp = async (req, res) => {
   try {
     const { phone, otp } = req.body;
-    console.log("VERIFY OTP:", phone, otp);
 
     const record = await Otp.findOne({ phone, otp });
 
@@ -219,7 +216,13 @@ export const verifyOtp = async (req, res) => {
       username: user.username,
     });
   } catch (err) {
-    console.error("VERIFY OTP ERROR:", err.message);
     res.status(500).json({ message: "OTP verification failed" });
   }
+};
+export const me = async (req, res) => {
+  res.json({
+    userId: req.user.userId,
+    username: req.user.username,
+    isAnonymous: req.user.isAnonymous,
+  });
 };

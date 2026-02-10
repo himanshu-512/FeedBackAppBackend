@@ -10,8 +10,8 @@ async function authFetch(url) {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    
   });
-
   if (!res.ok) {
     const text = await res.text();
     throw new Error(text || "Wallet API error");

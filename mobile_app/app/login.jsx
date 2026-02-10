@@ -8,7 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import TopBlob from "../components/TopBlob";
@@ -43,8 +43,6 @@ export default function Login() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <View style={styles.container}>
-        {/* RECAPTCHA */}
-
         <TopBlob />
         <StatusBar barStyle="dark-content" />
 
@@ -107,12 +105,14 @@ const styles = StyleSheet.create({
 
   welcome: {
     fontSize: 32,
-    fontWeight: "900",
+    fontFamily: "Poppins-ExtraBold", // 🔥 EXTRA BOLD
     marginBottom: 6,
+    color: "#111",
   },
 
   subtitle: {
     fontSize: 16,
+    fontFamily: "Poppins-Regular",
     color: "#555",
     marginBottom: 30,
   },
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
 
   prefix: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: "Poppins-SemiBold",
     marginRight: 6,
     color: "#333",
   },
@@ -138,6 +138,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     paddingVertical: 14,
     color: "#000",
+    fontFamily: "Poppins-Regular",
   },
 
   button: {
@@ -154,6 +155,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: "Poppins-SemiBold",
   },
 });

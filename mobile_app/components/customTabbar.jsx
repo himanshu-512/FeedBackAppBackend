@@ -1,5 +1,5 @@
 import React from "react";
-import { View, TouchableOpacity, StyleSheet } from "react-native";
+import { TouchableOpacity, StyleSheet } from "react-native";
 import Feather from "@expo/vector-icons/Feather";
 import FontAwesome6 from "@expo/vector-icons/FontAwesome6";
 import AntDesign from "@expo/vector-icons/AntDesign";
@@ -8,7 +8,13 @@ import Animated, {
   FadeIn,
   FadeOut,
   LinearTransition,
+  useAnimatedStyle,
 } from "react-native-reanimated";
+
+import { useTabBarAnimation } from "./TabBarAnimationContext"; // ✅ CONTEXT
+import { useFonts } from "expo-font";
+
+
 
 const AnimatedTouchableOpacity =
   Animated.createAnimatedComponent(TouchableOpacity);
@@ -16,9 +22,30 @@ const AnimatedTouchableOpacity =
 const PRIMARY_COLOR = "#130057";
 const SECONDARY_COLOR = "#fff";
 
-export default function CustomtabBar({ state, descriptors, navigation }) {
+export default function CustomtabBar({
+  state,
+  descriptors,
+  navigation,
+}) {
+
+  const [fontsLoaded] = useFonts({
+  PoppinsLight: require("../assets/font/Poppins/Poppins-Light.ttf"),
+  PoppinsRegular: require("../assets/font/Poppins/Poppins-Regular.ttf"),
+  PoppinsMedium: require("../assets/font/Poppins/Poppins-Medium.ttf"),
+  PoppinsSemiBold: require("../assets/font/Poppins/Poppins-SemiBold.ttf"),
+  PoppinsBold: require("../assets/font/Poppins/Poppins-Bold.ttf"),
+  PoppinsExtraBold: require("../assets/font/Poppins/Poppins-ExtraBold.ttf"),
+});
+  // ✅ GET SHARED VALUE FROM CONTEXT
+  const { translateY } = useTabBarAnimation();
+
+  // ✅ APPLY ANIMATION
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [{ translateY: translateY.value }],
+  }));
+
   return (
-    <View style={styles.container}>
+    <Animated.View style={[styles.container, animatedStyle]}>
       {state.routes.map((route, index) => {
         if (["_sitemap", "+not-found"].includes(route.name)) return null;
 
@@ -74,7 +101,7 @@ export default function CustomtabBar({ state, descriptors, navigation }) {
           </AnimatedTouchableOpacity>
         );
       })}
-    </View>
+    </Animated.View>
   );
 }
 
@@ -101,7 +128,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: PRIMARY_COLOR,
+    backgroundColor:"#1E1B4B",
     width: "80%",
     alignSelf: "center",
     bottom: 40,

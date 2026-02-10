@@ -14,7 +14,7 @@ import authRouter from "./routes/auth.routes.js";
 import channelRouter from "./routes/channel.routes.js";
 import messageRouter from "../src/routes/massage.routes.js";
 import walletRouter from "./routes/wallet.routes.js";
-
+import profileRouter from "./routes/profile.router.js";
 const app = express();
 const server = http.createServer(app);
 
@@ -23,6 +23,7 @@ app.use("/auth", authRouter);
 app.use("/channels", channelRouter);
 app.use("/messages", messageRouter);
 app.use("/wallet", walletRouter);
+app.use("/profile", profileRouter);
 
 /* =======================
    🌐 GLOBAL MIDDLEWARES

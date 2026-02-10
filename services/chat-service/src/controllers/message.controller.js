@@ -1,6 +1,8 @@
 import Message from "../models/message.model.js";
-
+import { awardPoints } from "../config/walletClient.js";
 /* 📨 CREATE MESSAGE (USED BY SOCKET / API) */
+
+
 export const createMessage = async ({
   channelId,
   userId,
@@ -21,6 +23,10 @@ export const createMessage = async ({
     username: username || "Anonymous",
     text,
   });
+  console.log("Message created:", message._id);
+
+  // 🔥 POINT EVENT (async, non-blocking)
+ 
 
   return message;
 };
@@ -29,23 +35,33 @@ export const createMessage = async ({
 export const getMessagesByChannel = async (req, res) => {
   try {
     const { channelId } = req.params;
+    const { limit = 50, before } = req.query;
 
     if (!channelId) {
-      return res.status(400).json({
-        message: "Channel ID required",
-      });
+      return res.status(400).json({ message: "Channel ID required" });
     }
 
-    const messages = await Message.find({ channelId })
-      .sort({ createdAt: 1 }) // oldest → newest
-      .limit(500)             // safety limit
+    const query = {
+      channelId,
+      isDeleted: false, // 🔥 deleted messages hide
+    };
+
+    // 🔁 Cursor-based pagination
+    if (before) {
+      query.createdAt = { $lt: new Date(before) };
+    }
+
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 }) // newest → oldest
+      .limit(Number(limit))
       .lean();
 
-    res.json(messages);
-  } catch (error) {
-    console.error("❌ Get messages error:", error.message);
-    res.status(500).json({
-      message: "Failed to fetch messages",
+    res.json({
+      messages: messages.reverse(), // oldest → newest (UI friendly)
+      hasMore: messages.length === Number(limit),
     });
+  } catch (err) {
+    console.error("GET MESSAGES ERROR:", err);
+    res.status(500).json({ message: "Failed to fetch messages" });
   }
 };

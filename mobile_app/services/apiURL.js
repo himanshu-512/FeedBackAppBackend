@@ -1,1 +1,1 @@
-export const gateWay = "https://feedbackappbackenddeploy-4.onrender.com";
+export const gateWay = "http://192.168.0.106:3000";

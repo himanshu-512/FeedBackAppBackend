@@ -2,70 +2,150 @@ import {
   View,
   Text,
   StyleSheet,
-  FlatList,
   Pressable,
-  ActivityIndicator,
+  TextInput,
+  ScrollView,
+  LayoutAnimation,
+  Platform,
+  UIManager,
+  Animated,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { ChannelCard } from "../../components/channelCard";
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { getChannels } from "../../services/api";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Feather } from "@expo/vector-icons";
 import { gateWay } from "../../services/apiURL";
+import { useRouter } from "expo-router";
+import Reanimated from "react-native-reanimated";
+import { useTabBarAnimation } from "../../components/TabBarAnimationContext";
 
-/* 🔓 SIMPLE JWT PAYLOAD DECODE */
+/* ANDROID LAYOUT ANIMATION */
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
+
+/* JWT DECODE */
 const decodeJWT = (token) => {
   try {
-    const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const jsonPayload = decodeURIComponent(
-      atob(base64)
-        .split("")
-        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
-        .join("")
-    );
-    return JSON.parse(jsonPayload);
+    return JSON.parse(atob(token.split(".")[1]));
   } catch {
     return null;
   }
 };
 
+const categories = ["All", "Tech", "Startup", "College", "Gaming"];
+
+/* ================= SKELETON HELPERS ================= */
+
+function SkeletonBox({ style, opacity }) {
+  return (
+    <Animated.View
+      style={[styles.skeleton, style, { opacity }]}
+    />
+  );
+}
+
+function ChannelSkeleton({ opacity }) {
+  return (
+    <View style={styles.skeletonCard}>
+      <View style={{ flex: 1 }}>
+        <SkeletonBox opacity={opacity} style={{ height: 18, width: "60%", marginBottom: 8 }} />
+        <SkeletonBox opacity={opacity} style={{ height: 14, width: "90%", marginBottom: 6 }} />
+        <SkeletonBox opacity={opacity} style={{ height: 14, width: "70%", marginBottom: 12 }} />
+        <SkeletonBox opacity={opacity} style={{ height: 12, width: "40%" }} />
+      </View>
+
+      <SkeletonBox
+        opacity={opacity}
+        style={{ width: 56, height: 56, borderRadius: 28, marginLeft: 12 }}
+      />
+    </View>
+  );
+}
+
+/* ================= HOME ================= */
+
 export default function Home() {
+  const router = useRouter();
+  const { onScroll } = useTabBarAnimation();
+
   const [channels, setChannels] = useState([]);
   const [filtered, setFiltered] = useState([]);
+  const [topTrending, setTopTrending] = useState(null);
+  const [restTrending, setRestTrending] = useState([]);
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Trending");
+  const [joining, setJoining] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
 
-  /* 🔑 LOAD USER */
+  /* Skeleton pulse */
+  const pulse = useRef(new Animated.Value(0.4)).current;
+
+  /* MOST ACTIVE breathing animation */
+  const activePulse = useRef(new Animated.Value(1)).current;
+
   useEffect(() => {
-    const loadUser = async () => {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) return;
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0.4,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
 
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(activePulse, {
+          toValue: 1.03,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(activePulse, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
+  }, []);
+
+  /* LOAD USER */
+  useEffect(() => {
+    AsyncStorage.getItem("token").then((token) => {
+      if (!token) return;
       const decoded = decodeJWT(token);
       if (decoded?.userId) {
         setUserId(decoded.userId);
         setUsername(decoded.username);
       }
-    };
-    loadUser();
+    });
   }, []);
 
-  /* 📡 LOAD CHANNELS */
+  /* LOAD CHANNELS */
   const loadChannels = useCallback(() => {
     setLoading(true);
     getChannels()
       .then((data) => {
         setChannels(data);
-        setFiltered(data);
+        const sorted = [...data].sort(
+          (a, b) => (b.members?.length || 0) - (a.members?.length || 0)
+        );
+        setTopTrending(sorted[0] || null);
+        setRestTrending(sorted.slice(1));
+        setFiltered(sorted.slice(1));
       })
-      .catch((err) =>
-        console.log("CHANNEL ERROR:", err.message)
-      )
       .finally(() => setLoading(false));
   }, []);
 
@@ -73,27 +153,25 @@ export default function Home() {
     loadChannels();
   }, []);
 
-  /* 🧭 FILTER BASED ON TAB */
+  /* TAB CHANGE */
   useEffect(() => {
-    if (!userId) return;
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
 
-    if (activeTab === "Trending") {
-      setFiltered(channels);
-    } else if (activeTab === "My Channels") {
+    if (activeTab === "Trending") setFiltered(restTrending);
+    if (activeTab === "Official")
+      setFiltered(channels.filter((c) => c.isOfficial));
+    if (activeTab === "My Channels")
       setFiltered(
-        channels.filter((ch) =>
-          ch.members?.some((m) => m.userId === userId)
+        channels.filter((c) =>
+          c.members?.some((m) => m.userId === userId)
         )
       );
-    } else if (activeTab === "Official") {
-      setFiltered(
-        channels.filter((ch) => ch.isOfficial)
-      );
-    }
-  }, [activeTab, channels, userId]);
+  }, [activeTab, channels, restTrending, userId]);
 
-  /* ➕ JOIN CHANNEL */
+  /* JOIN CHANNEL */
   const joinChannel = async (channelId) => {
+    if (joining) return;
+    setJoining(true);
     try {
       await fetch(`${gateWay}/channels/${channelId}/join`, {
         method: "POST",
@@ -101,152 +179,244 @@ export default function Home() {
           Authorization: `Bearer ${await AsyncStorage.getItem("token")}`,
         },
       });
-
-      setChannels((prev) =>
-        prev.map((ch) =>
-          ch._id === channelId
-            ? {
-                ...ch,
-                members: ch.members.some(
-                  (m) => m.userId === userId
-                )
-                  ? ch.members
-                  : [...ch.members, { userId, username }],
-              }
-            : ch
-        )
-      );
-    } catch (err) {
-      console.log("JOIN ERROR:", err.message);
+      loadChannels();
+    } finally {
+      setJoining(false);
     }
   };
 
+  const isJoinedTrending = topTrending?.members?.some(
+    (m) => m.userId === userId
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-      {/* 🌈 HEADER */}
-      <LinearGradient
-        colors={["#7860E3", "#D66767"]}
-        style={styles.header}
-      >
+      {/* HEADER */}
+      <LinearGradient colors={["#6C5CE7", "#FF7675"]} style={styles.header}>
         <View>
-          <Text style={styles.headerText}>Feedback Chat</Text>
-          <Text style={styles.headerSub}>
-            Join trending conversations
-          </Text>
+          <Text style={styles.headerText}>Hi, {username || "User"} 👋</Text>
+          <Text style={styles.headerSub}>Talk freely. Stay anonymous.</Text>
         </View>
         <Text style={styles.headerIcon}>💬</Text>
       </LinearGradient>
 
-      {/* 🧭 TABS */}
-      <View style={styles.tabs}>
-        {["Trending", "Official", "My Channels"].map(
-          (tab) => (
-            <Pressable
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={styles.tabWrap}
-            >
-              <Text
-                style={
-                  tab === activeTab
-                    ? styles.activeTabText
-                    : styles.tab
-                }
+      {/* SEARCH + CHIPS */}
+      <View style={styles.searchWrap}>
+        <View style={styles.searchBox}>
+          <Feather name="search" size={18} color="#777" />
+          <TextInput placeholder="Search channels..." style={styles.searchInput} />
+        </View>
+
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          {categories.map((c) => {
+            const active = c === activeCategory;
+            return (
+              <Pressable
+                key={c}
+                onPress={() => setActiveCategory(c)}
+                style={[styles.chip, active && styles.activeChip]}
               >
-                {tab}
-              </Text>
-              {tab === activeTab && (
-                <View style={styles.indicator} />
-              )}
-            </Pressable>
-          )
-        )}
+                <Text style={[styles.chipText, active && styles.activeChipText]}>
+                  {c}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
-      {/* 📃 CHANNEL LIST */}
+      {/* TABS */}
+      <View style={styles.tabs}>
+        {["Trending", "Official", "My Channels"].map((tab) => (
+          <Pressable
+            key={tab}
+            onPress={() => setActiveTab(tab)}
+            style={styles.tabWrap}
+          >
+            <Text style={tab === activeTab ? styles.activeTab : styles.tab}>
+              {tab}
+            </Text>
+            {tab === activeTab && <View style={styles.indicator} />}
+          </Pressable>
+        ))}
+      </View>
+
+      {/* LIST / SKELETON */}
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#7860E3"
-          style={{ marginTop: 50 }}
-        />
+        <ScrollView contentContainerStyle={styles.list}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <ChannelSkeleton key={i} opacity={pulse} />
+          ))}
+        </ScrollView>
       ) : (
-        <FlatList
+        <Reanimated.FlatList
           data={filtered}
-          keyExtractor={(item) => item._id}
-          contentContainerStyle={styles.list}
+          keyExtractor={(i) => i._id}
           showsVerticalScrollIndicator={false}
-          refreshing={loading}
-          onRefresh={loadChannels}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={{ fontSize: 40 }}>📭</Text>
-              <Text style={styles.emptyText}>
-                No channels found
-              </Text>
-            </View>
+          contentContainerStyle={styles.list}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
+          ListHeaderComponent={
+            activeTab === "Trending" &&
+            topTrending && (
+              <Animated.View
+                style={[
+                  styles.trendingWrapper,
+                  { transform: [{ scale: activePulse }] },
+                ]}
+              >
+                <LinearGradient
+                  colors={["#FF9F43", "#FF7675"]}
+                  style={styles.trendingCard}
+                >
+                  <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 6 }}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.badge}>MOST ACTIVE</Text>
+                  </View>
+
+                  <Text style={styles.trendingTitle}>{topTrending.name}</Text>
+                  <Text style={styles.trendingNow}>
+                    🔥 {topTrending.members?.length || 0} members chatting
+                  </Text>
+
+                  <Pressable
+                    style={[
+                      styles.joinBtn,
+                      isJoinedTrending && { backgroundColor: "#22C55E" },
+                    ]}
+                    onPress={() => {
+                      if (isJoinedTrending) {
+                        router.push({
+                          pathname: `/channels/${topTrending._id}`,
+                          params: { name: topTrending.name },
+                        });
+                      } else {
+                        joinChannel(topTrending._id);
+                      }
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.joinText,
+                        isJoinedTrending && { color: "#fff" },
+                      ]}
+                    >
+                      {isJoinedTrending
+                        ? "Start Chatting"
+                        : joining
+                        ? "Joining..."
+                        : "Join"}
+                    </Text>
+                  </Pressable>
+                </LinearGradient>
+              </Animated.View>
+            )
           }
           renderItem={({ item }) => (
             <ChannelCard
               item={item}
               onJoin={joinChannel}
-              isJoined={item.members?.some(
-                (m) => m.userId === userId
-              )}
+              isJoined={item.members?.some((m) => m.userId === userId)}
             />
           )}
         />
       )}
-
-      {/* ➕ FLOATING ACTION BUTTON */}
-      {/* <Pressable style={styles.fab}>
-        <Feather name="plus" size={24} color="#fff" />
-      </Pressable> */}
     </SafeAreaView>
   );
 }
 
-/* 🎨 STYLES */
+/* ================= STYLES ================= */
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f9f9fb",
+    backgroundColor: "#F8F9FD",
   },
+
+  /* ================= HEADER ================= */
 
   header: {
     margin: 16,
-    borderRadius: 20,
-    padding: 22,
+    borderRadius: 26,
+    padding: 26,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 5,
+    elevation: 8,
   },
 
   headerText: {
     color: "#fff",
-    fontSize: 24,
-    fontWeight: "800",
+    fontSize: 22,
+    fontFamily: "PoppinsExtraBold",
   },
 
   headerSub: {
-    color: "rgba(255,255,255,0.85)",
+    color: "rgba(255,255,255,0.9)",
     marginTop: 4,
-    fontSize: 14,
+    fontFamily: "PoppinsRegular",
+    fontSize: 13,
   },
 
   headerIcon: {
-    fontSize: 30,
+    fontSize: 28,
   },
+
+  /* ================= SEARCH ================= */
+
+  searchWrap: {
+    paddingHorizontal: 16,
+  },
+
+  searchBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 28,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+    marginBottom: 14,
+    elevation: 4,
+  },
+
+  searchInput: {
+    marginLeft: 10,
+    flex: 1,
+    fontFamily: "PoppinsRegular",
+    fontSize: 14,
+    color: "#111",
+  },
+
+  /* ================= CHIPS ================= */
+
+  chip: {
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+
+  activeChip: {
+    backgroundColor: "#6C5CE7",
+  },
+
+  chipText: {
+    fontFamily: "PoppinsSemiBold",
+    fontSize: 13,
+    color: "#6B7280",
+  },
+
+  activeChipText: {
+    color: "#fff",
+  },
+
+  /* ================= TABS ================= */
 
   tabs: {
     flexDirection: "row",
     paddingHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 10,
+    marginVertical: 12,
   },
 
   tabWrap: {
@@ -254,55 +424,105 @@ const styles = StyleSheet.create({
   },
 
   tab: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#000",
+    fontSize: 15,
+    fontFamily: "PoppinsMedium",
+    color: "#9CA3AF",
   },
 
-  activeTabText: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#E06B78",
+  activeTab: {
+    fontSize: 15,
+    fontFamily: "PoppinsBold",
+    color: "#6C5CE7",
   },
 
   indicator: {
     height: 4,
-    width: 40,
+    width: 36,
+    backgroundColor: "#6C5CE7",
+    marginTop: 6,
     borderRadius: 4,
-    backgroundColor: "#7860E3",
-    marginTop: 4,
   },
+
+  /* ================= LIST ================= */
 
   list: {
     paddingHorizontal: 16,
-    paddingBottom: 100,
+    paddingBottom: 160,
   },
 
-  empty: {
-    alignItems: "center",
-    marginTop: 80,
+  /* ================= TRENDING CARD ================= */
+
+  trendingWrapper: {
+    borderRadius: 30,
+    marginBottom: 20,
+    shadowColor: "#6C5CE7",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 20,
+    elevation: 12,
   },
 
-  emptyText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#555",
-    marginTop: 8,
-  },
-
-  fab: {
-    position: "absolute",
-    bottom: 30,
-    right: 20,
-    backgroundColor: "#7860E3",
-    width: 56,
-    height: 56,
+  trendingCard: {
     borderRadius: 28,
-    justifyContent: "center",
+    padding: 17,
+  },
+
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: "#22C55E",
+    marginRight: 6,
+  },
+
+  badge: {
+    color: "#fff",
+    fontSize: 12,
+    fontFamily: "PoppinsBold",
+    letterSpacing: 0.6,
+  },
+
+  trendingTitle: {
+    color: "#fff",
+    fontSize: 22,
+    fontFamily: "PoppinsExtraBold",
+    marginTop: 6,
+  },
+
+  trendingNow: {
+    color: "#FFE4E6",
+    marginVertical: 10,
+    fontFamily: "PoppinsMedium",
+    fontSize: 13,
+  },
+
+  joinBtn: {
+    backgroundColor: "#fff",
+    paddingVertical: 14,
+    borderRadius: 24,
     alignItems: "center",
-    elevation: 6,
-    shadowColor: "#7860E3",
-    shadowOpacity: 0.4,
-    shadowRadius: 6,
+    elevation: 4,
+  },
+
+  joinText: {
+    color: "#6C5CE7",
+    fontFamily: "PoppinsBold",
+    fontSize: 15,
+  },
+
+  /* ================= SKELETON ================= */
+
+  skeleton: {
+    backgroundColor: "#E5E7EB",
+    borderRadius: 12,
+  },
+
+  skeletonCard: {
+    flexDirection: "row",
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    padding: 18,
+    marginBottom: 16,
+    elevation: 4,
   },
 });

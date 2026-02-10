@@ -4,9 +4,12 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  Animated,
+  Easing,
+  RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { useFocusEffect } from "expo-router";
 import {
   getWalletSummary,
@@ -17,6 +20,10 @@ export default function WalletScreen() {
   const [summary, setSummary] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  /* 🎯 Animated progress */
+  const progressAnim = useRef(new Animated.Value(0)).current;
 
   /* 🔄 LOAD WALLET ON TAB FOCUS */
   useFocusEffect(
@@ -48,6 +55,37 @@ export default function WalletScreen() {
     }, [])
   );
 
+  /* 🔄 Pull-down refresh */
+  const onRefresh = async () => {
+    try {
+      setRefreshing(true);
+      const [s, t] = await Promise.all([
+        getWalletSummary(),
+        getWalletTransactions(),
+      ]);
+      setSummary(s);
+      setTransactions(t);
+    } catch (err) {
+      console.log("REFRESH ERROR:", err.message);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  /* 🎬 Animate progress when points change */
+  useEffect(() => {
+    if (summary?.points !== undefined) {
+      const progress = summary.points / 1000;
+
+      Animated.timing(progressAnim, {
+        toValue: progress,
+        duration: 800,
+        easing: Easing.out(Easing.ease),
+        useNativeDriver: false,
+      }).start();
+    }
+  }, [summary?.points]);
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" />
@@ -73,6 +111,14 @@ export default function WalletScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scroll}
         style={styles.scrollView}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor="#7860E3"
+            colors={["#7860E3"]}
+          />
+        }
       >
         {/* 💳 BALANCE CARD */}
         <View style={styles.balanceCard}>
@@ -89,7 +135,7 @@ export default function WalletScreen() {
             <View style={[styles.statBox, styles.todayBox]}>
               <Text style={styles.statLabel}>Today</Text>
               <Text style={styles.statValue}>
-                ₹{summary?.today ?? 0}
+                {summary?.today ?? 0} Points
               </Text>
             </View>
 
@@ -101,6 +147,34 @@ export default function WalletScreen() {
             </View>
           </View>
         </View>
+
+        {/* 🎯 POINTS PROGRESS */}
+        <View style={styles.progressContainer}>
+          <Text style={styles.progressText}>
+            {summary?.points ?? 0} / 1000 Points
+          </Text>
+
+          <View style={styles.progressBar}>
+            <Animated.View
+              style={[
+                styles.progressFill,
+                {
+                  width: progressAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: ["2%", "100%"], // 👈 minimum visible
+                  }),
+                },
+              ]}
+            />
+          </View>
+
+          <Text style={styles.progressHint}>
+            {1000 - (summary?.points ?? 0)} points away from ₹1
+          </Text>
+        </View>
+
+        {/* ───────── Divider ───────── */}
+        <View style={styles.divider} />
 
         {/* 📜 TRANSACTIONS */}
         <View style={styles.section}>
@@ -128,6 +202,11 @@ export default function WalletScreen() {
 
           {transactions.map((tx) => {
             const isCredit = tx.type === "credit";
+            const isPointTx = !tx.title.includes("Wallet");
+
+            const amountText = isPointTx
+              ? `${isCredit ? "+" : "-"}${tx.amount} Point${tx.amount > 1 ? "s" : ""}`
+              : `${isCredit ? "+" : "-"}₹${tx.amount}`;
 
             return (
               <View key={tx._id} style={styles.tx}>
@@ -151,9 +230,8 @@ export default function WalletScreen() {
                       {tx.title}
                     </Text>
                     <Text style={styles.txSub}>
-                      {new Date(
-                        tx.createdAt
-                      ).toDateString()} · {tx.channel}
+                      {new Date(tx.createdAt).toDateString()}
+                      {tx.channel ? ` · ${tx.channel}` : ""}
                     </Text>
                   </View>
                 </View>
@@ -168,7 +246,7 @@ export default function WalletScreen() {
                     },
                   ]}
                 >
-                  {isCredit ? "+" : "-"}₹{tx.amount}
+                  {amountText}
                 </Text>
               </View>
             );
@@ -252,7 +330,6 @@ const styles = StyleSheet.create({
     marginTop: 6,
     fontSize: 32,
     fontWeight: "900",
-    letterSpacing: 0.5,
   },
 
   currency: {
@@ -286,6 +363,47 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontSize: 17,
     fontWeight: "800",
+  },
+
+  /* 🎯 Progress */
+  progressContainer: {
+    marginTop: 18,
+    marginHorizontal: 20,
+  },
+
+  progressText: {
+    fontSize: 14,
+    fontWeight: "700",
+    marginBottom: 6,
+  },
+
+  progressBar: {
+    height: 12,
+    backgroundColor: "#e5e7eb",
+    borderRadius: 999,
+    overflow: "hidden",
+  },
+
+  progressFill: {
+    height: "100%",
+    backgroundColor: "#7860E3",
+    borderRadius: 999,
+    shadowColor: "#7860E3",
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+  },
+
+  progressHint: {
+    marginTop: 6,
+    fontSize: 12,
+    color: "#777",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+    marginHorizontal: 20,
+    marginTop: 24,
   },
 
   section: {

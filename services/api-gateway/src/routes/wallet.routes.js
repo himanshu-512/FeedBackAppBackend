@@ -6,7 +6,7 @@ router.use(
   '/',
   verifyJWT, // 🔥 MUST
   createProxyMiddleware({
-    target: process.env.WALLET_SERVICE_URL || 'http://localhost:3003', // 🔥 FIX PORT
+    target: process.env.WALLET_SERVICE_URL, // 🔥 FIX PORT
     changeOrigin: true
   })
 );

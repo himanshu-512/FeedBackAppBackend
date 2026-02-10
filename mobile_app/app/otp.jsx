@@ -114,12 +114,14 @@ const styles = StyleSheet.create({
 
   welcome: {
     fontSize: 32,
-    fontWeight: "900",
+    fontFamily: "Poppins-ExtraBold", // 🔥 EXTRA BOLD
     marginBottom: 6,
+    color: "#111",
   },
 
   subtitle: {
     fontSize: 16,
+    fontFamily: "Poppins-Regular",
     color: "#555",
     marginBottom: 30,
   },
@@ -133,6 +135,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     marginBottom: 30,
     color: "#000",
+    fontFamily: "Poppins-SemiBold",
   },
 
   button: {
@@ -150,6 +153,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: "Poppins-SemiBold",
   },
 });

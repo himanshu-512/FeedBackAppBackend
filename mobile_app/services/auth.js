@@ -33,6 +33,7 @@ export const sendOtp = async (phone) => {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ phone }),
   });
+  console.log(`${BASE_URL}/auth/send-otp`);
   await AsyncStorage.setItem("otp_phone", phone);
 
   const data = await res.json(); // ✅ FIX

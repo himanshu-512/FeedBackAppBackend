@@ -16,7 +16,7 @@ const messageSchema = new mongoose.Schema(
     },
 
     username: {
-      type: String, // snapshot at send time
+      type: String,
       required: true,
     },
 
@@ -27,26 +27,45 @@ const messageSchema = new mongoose.Schema(
       trim: true,
     },
 
+    /* 🔥 NEW: Reply support */
+    parentId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Message",
+      default: null,
+    },
+
+    /* 🔥 NEW: Upvotes */
+    upvotes: {
+      type: [String], // userIds
+      default: [],
+    },
+
+    /* 🔥 FIXED: Emoji reactions */
+    reactions: {
+      type: Map,
+      of: [String], // { "❤️": ["user1", "user2"] }
+      default: {},
+    },
+
     isEdited: {
       type: Boolean,
       default: false,
+    },
+
+    editedAt: {
+      type: Date,
+      default: null,
     },
 
     isDeleted: {
       type: Boolean,
       default: false,
     },
-
-    reactions: {
-      type: Map,
-      of: Number, // { ❤️: 2, 🔥: 1 }
-      default: {},
-    },
   },
   { timestamps: true }
 );
 
-/* 🔥 CHAT INDEX (VERY IMPORTANT) */
-messageSchema.index({ channelId: 1, createdAt: 1 });
+/* 🔥 IMPORTANT INDEX */
+messageSchema.index({ channelId: 1, createdAt: -1 });
 
 export default mongoose.model("Message", messageSchema);

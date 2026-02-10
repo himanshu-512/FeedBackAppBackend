@@ -8,9 +8,11 @@
     "scheme": "mobileapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true
     },
+
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
@@ -22,30 +24,35 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.himanshu.feedback"
     },
+
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/new.png"
     },
+
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
+          "backgroundColor": "#f8f9ff",
+          "image": "./assets/images/new.png",
           "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
           "dark": {
-            "backgroundColor": "#000000"
+            "backgroundColor": "#f8f9ff",
+            "image": "./assets/images/new.png",
+            "resizeMode": "contain"
           }
         }
       ],
       "expo-font"
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
+
     "extra": {
       "router": {},
       "eas": {

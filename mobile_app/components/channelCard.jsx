@@ -5,7 +5,7 @@ export function ChannelCard({ item, isJoined, onJoin }) {
   const router = useRouter();
 
   return (
-    <View style={{ marginBottom: 14 }}>
+    <View style={styles.wrapper}>
       <Pressable
         disabled={!isJoined}
         onPress={() =>
@@ -14,12 +14,14 @@ export function ChannelCard({ item, isJoined, onJoin }) {
             params: { name: item.name },
           })
         }
-        android_ripple={isJoined ? { color: "#ccc" } : null}
+        android_ripple={isJoined ? { color: "#e5e7eb" } : null}
         style={styles.card}
       >
         {/* LEFT CONTENT */}
         <View style={styles.left}>
-          <Text style={styles.title}>{item.name}</Text>
+          <View style={styles.titleRow}>
+            <Text style={styles.title}>{item.name}</Text>
+          </View>
 
           {item.description && (
             <Text style={styles.desc} numberOfLines={2}>
@@ -27,111 +29,143 @@ export function ChannelCard({ item, isJoined, onJoin }) {
             </Text>
           )}
 
-          <Text style={styles.members}>
-            👥 {item.members.length} members
-          </Text>
+          <View style={styles.footer}>
+            <Text style={styles.members}>👥 {item.members.length}</Text>
 
-          {!isJoined ? (
-            <Pressable
-              onPress={() => onJoin(item._id)}
-              style={styles.joinBtn}
-            >
-              <Text style={styles.joinText}>Join</Text>
-            </Pressable>
-          ) : (
-            <View style={styles.joinedBadge}>
-              <Text style={styles.joinedText}>Joined</Text>
-            </View>
-          )}
+            {!isJoined ? (
+              <Pressable
+                onPress={() => onJoin(item._id)}
+                style={styles.joinBtn}
+              >
+                <Text style={styles.joinText}>Join</Text>
+              </Pressable>
+            ) : (
+              <View style={styles.joinedBadge}>
+                <Text style={styles.joinedText}>Joined</Text>
+              </View>
+            )}
+          </View>
         </View>
 
-        {/* ICON */}
+        {/* FLOATING ICON */}
         <View
           style={[
             styles.iconWrap,
-            { backgroundColor: item.color || "#dcd6ff" },
+            { backgroundColor: item.color || "#EDEBFF" },
           ]}
         >
-          <Text style={styles.icon}>
-            {item.icon || "💬"}
-          </Text>
+          <Text style={styles.icon}>{item.icon || "💬"}</Text>
         </View>
       </Pressable>
     </View>
   );
 }
-
 const styles = StyleSheet.create({
+  wrapper: {
+    marginBottom: 16,
+    paddingHorizontal: 4,
+  },
+
   card: {
     flexDirection: "row",
-    backgroundColor: "#e5e5e59c",   // 👈 as you wanted
-    borderRadius: 18,
-    padding: 16,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 22,
+    paddingVertical: 22,
+    paddingHorizontal: 18,
     alignItems: "center",
+
+    // ✅ REAL floating effect
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 6,
+
+    // subtle border so card doesn’t vanish
+    borderWidth: 1,
+    borderColor: "#F1F5F9",
   },
 
   left: {
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 14,
+  },
+
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
   },
 
   title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: "#111",
+    fontSize: 17,
+    fontFamily: "PoppinsExtraBold",
+    color: "#111827",
   },
 
   desc: {
     fontSize: 14,
-    color: "#444",
-    marginVertical: 6,
+    fontFamily: "PoppinsRegular",
+    color: "#4B5563",
+    marginTop: 6,
+    lineHeight: 22,
+  },
+
+  footer: {
+    marginTop: 10,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
 
   members: {
     fontSize: 13,
-    color: "#555",
-    fontWeight: "600",
+    fontFamily: "PoppinsMedium",
+    color: "#6B7280",
   },
 
   joinBtn: {
-    marginTop: 10,
-    alignSelf: "flex-start",
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    borderRadius: 10,
-    backgroundColor: "#7860E3",
+    borderRadius: 14,
+    backgroundColor: "#6C5CE7",
   },
 
   joinText: {
     color: "#fff",
-    fontWeight: "700",
+    fontFamily: "PoppinsBold",
     fontSize: 13,
   },
 
   joinedBadge: {
-    marginTop: 10,
-    backgroundColor: "#d4f3e3",
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 10,
-    alignSelf: "flex-start",
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 14,
+    backgroundColor: "#DCFCE7",
   },
 
   joinedText: {
     fontSize: 12,
-    color: "#1f9d55",
-    fontWeight: "700",
+    fontFamily: "PoppinsBold",
+    color: "#166534",
   },
 
   iconWrap: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     justifyContent: "center",
     alignItems: "center",
+
+    // icon also floats slightly
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 6,
   },
 
   icon: {
-    fontSize: 26,
+    fontSize: 24,
   },
 });
+

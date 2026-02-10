@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
 
   content: {
     alignItems: "center",
-    marginTop: height * 0.18, // 👈 more responsive
+    marginTop: height * 0.18,
   },
 
   logoEllipse: {
@@ -98,7 +98,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 26,
 
-    // premium shadow
     elevation: 10,
     shadowColor: "#000",
     shadowOpacity: 0.2,
@@ -113,28 +112,31 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: 34, // 👈 stronger hierarchy
-    fontWeight: "900",
+    fontSize: 34,
+    fontFamily: "Poppins-Bold",
     marginBottom: 14,
   },
 
   purple: {
     color: "#7b6cff",
+    fontFamily: "Poppins-Bold",
   },
 
   pink: {
     color: "#e46b6b",
+    fontFamily: "Poppins-Bold",
   },
 
   subtitle: {
     fontSize: 17,
-    fontWeight: "500",
+    fontFamily: "Poppins-Medium",
     color: "#444",
   },
 
   tagline: {
     marginTop: 16,
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     color: "#777",
   },
 
@@ -150,7 +152,6 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     alignItems: "center",
 
-    // better button depth
     elevation: 6,
     shadowColor: "#000",
     shadowOpacity: 0.15,
@@ -161,6 +162,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#fff",
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: "Poppins-SemiBold",
   },
 });

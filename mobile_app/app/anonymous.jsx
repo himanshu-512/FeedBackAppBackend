@@ -14,7 +14,6 @@ import { useRouter } from "expo-router";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import TopBlob from "../components/TopBlob";
 import BottomBlob from "../components/BottomBlob";
-import { anonymousLogin } from "../services/auth";
 import { gateWay } from "../services/apiURL";
 
 const BASE_URL = gateWay;
@@ -53,7 +52,6 @@ export default function Anonymous() {
         setUsername(data.username);
         setUserId(data.userId);
 
-        // Animate username reveal
         Animated.parallel([
           Animated.timing(fadeAnim, {
             toValue: 1,
@@ -80,13 +78,13 @@ export default function Anonymous() {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" translucent />
 
-      {/* Background blobs */}
+      {/* BACKGROUND BLOBS */}
       <TopBlob />
       <BottomBlob />
 
-      {/* Content */}
+      {/* CONTENT */}
       <View style={styles.content}>
-        {/* Gradient ellipse avatar */}
+        {/* AVATAR */}
         <LinearGradient
           colors={["#7860E3", "#D66767"]}
           start={{ x: 0, y: 0 }}
@@ -96,12 +94,13 @@ export default function Anonymous() {
           <Image source={avatar} style={styles.avatarImage} />
         </LinearGradient>
 
+        {/* TITLE */}
         <Text style={styles.title}>
           <Text style={styles.purple}>You are </Text>
           <Text style={styles.pink}>anonymous</Text>
         </Text>
 
-        {/* Username pill (Animated) */}
+        {/* USERNAME */}
         <Animated.View
           style={[
             styles.usernameBox,
@@ -116,14 +115,13 @@ export default function Anonymous() {
           </Text>
         </Animated.View>
 
-        {/* Change username */}
         {!loading && (
           <Pressable onPress={() => alert("Username change coming soon!")}>
             <Text style={styles.change}>Change username</Text>
           </Pressable>
         )}
 
-        {/* Trust messaging */}
+        {/* TRUST TEXT */}
         <Text style={styles.info}>
           No profile • No identity • No tracking
         </Text>
@@ -132,7 +130,7 @@ export default function Anonymous() {
         </Text>
       </View>
 
-      {/* Continue button */}
+      {/* CONTINUE BUTTON */}
       <Pressable
         disabled={loading}
         onPress={() => router.replace("/home")}
@@ -159,7 +157,7 @@ const styles = StyleSheet.create({
 
   content: {
     alignItems: "center",
-    marginTop: height * 0.18, // more responsive
+    marginTop: height * 0.18,
     paddingHorizontal: 24,
   },
 
@@ -185,7 +183,7 @@ const styles = StyleSheet.create({
 
   title: {
     fontSize: 30,
-    fontWeight: "800",
+    fontFamily: "Poppins-ExtraBold", // 🔥 EXTRA BOLD
     marginBottom: 14,
   },
 
@@ -206,7 +204,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#e0e0e0",
 
-    // Glow effect
     shadowColor: "#7860E3",
     shadowOpacity: 0.15,
     shadowRadius: 6,
@@ -215,19 +212,20 @@ const styles = StyleSheet.create({
 
   usernameText: {
     fontSize: 22,
-    fontWeight: "800",
+    fontFamily: "Poppins-Bold",
     color: "#000",
     letterSpacing: 0.5,
   },
 
   change: {
     color: "#7860E3",
-    fontWeight: "700",
+    fontFamily: "Poppins-SemiBold",
     marginBottom: 10,
   },
 
   info: {
     fontSize: 16,
+    fontFamily: "Poppins-Regular",
     color: "#444",
     marginTop: 6,
     textAlign: "center",
@@ -235,6 +233,7 @@ const styles = StyleSheet.create({
 
   trust: {
     fontSize: 14,
+    fontFamily: "Poppins-Regular",
     color: "#777",
     marginTop: 4,
     textAlign: "center",
@@ -256,6 +255,6 @@ const styles = StyleSheet.create({
   btnText: {
     color: "#ffffff",
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: "Poppins-SemiBold",
   },
 });

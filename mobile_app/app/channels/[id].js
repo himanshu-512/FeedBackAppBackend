@@ -9,7 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
-  Alert,
+  Animated,
+  PanResponder,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import { io } from "socket.io-client";
@@ -22,93 +23,138 @@ import { gateWay } from "../../services/apiURL";
 
 const BASE_URL = gateWay;
 
-/* 🔓 PURE JS JWT DECODE */
+/* =====================
+   HELPERS
+===================== */
 const decodeJWT = (token) => {
   try {
     const base64Url = token.split(".")[1];
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    return JSON.parse(atob(base64));
+    return JSON.parse(atob(base64Url));
   } catch {
     return null;
   }
 };
 
+const formatTime = (date) =>
+  new Date(date).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+/* =====================
+   FEEDBACK CARD
+===================== */
+const FeedbackCard = ({ item, myId, socketRef, setReplyTo }) => {
+  const isMe = item.userId === myId;
+  const scale = useRef(new Animated.Value(1)).current;
+
+  const panResponder = useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dx) > 20,
+      onPanResponderRelease: (_, g) => {
+        if (g.dx > 60) {
+          setReplyTo(item);
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+        }
+      },
+    })
+  ).current;
+
+  const like = () => {
+    socketRef.current.emit("upvoteMessage", {
+      messageId: item._id,
+      userId: myId,
+    });
+
+    Animated.sequence([
+      Animated.spring(scale, { toValue: 1.15, useNativeDriver: true }),
+      Animated.spring(scale, { toValue: 1, useNativeDriver: true }),
+    ]).start();
+
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+  };
+
+  return (
+    <Animated.View
+      {...panResponder.panHandlers}
+      style={[
+        styles.card,
+        isMe ? styles.myCard : styles.otherCard,
+        { transform: [{ scale }] },
+      ]}
+    >
+      {!isMe && <Text style={styles.username}>{item.username}</Text>}
+
+      <Text style={styles.message}>{item.text}</Text>
+
+      <View style={styles.divider} />
+
+      <View style={styles.footer}>
+        <View style={styles.actions}>
+          <Pressable onPress={like} style={styles.actionBtn}>
+            <Text style={styles.actionText}>
+              👍 {item.upvotes?.length || 0}
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => setReplyTo(item)}
+            style={styles.actionBtn}
+          >
+            <Text style={styles.actionText}>💬 Reply</Text>
+          </Pressable>
+
+          {(item.upvotes?.length || 0) >= 10 && (
+            <View style={styles.helpfulBadge}>
+              <Text style={styles.helpfulText}>Helpful</Text>
+            </View>
+          )}
+        </View>
+
+        <Text style={styles.time}>{formatTime(item.createdAt)}</Text>
+      </View>
+    </Animated.View>
+  );
+};
+
+/* =====================
+   MAIN SCREEN
+===================== */
 export default function ChannelChat() {
   const { id: channelId, name } = useLocalSearchParams();
 
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [isMember, setIsMember] = useState(false);
+  const [replyTo, setReplyTo] = useState(null);
+
   const [userId, setUserId] = useState(null);
   const [username, setUsername] = useState(null);
-  const [typingUser, setTypingUser] = useState(false);
-
   const socketRef = useRef(null);
-  const listRef = useRef(null);
-  const typingTimeout = useRef(null);
 
-  /* 🔑 LOAD USER FROM JWT */
+  /* 🔐 Load user */
   useEffect(() => {
-    const loadUser = async () => {
-      const token = await AsyncStorage.getItem("token");
-      if (!token) return;
-
-      const decoded = decodeJWT(token);
-      if (decoded?.userId) {
-        setUserId(decoded.userId);
-        setUsername(decoded.username);
+    AsyncStorage.getItem("token").then((t) => {
+      const d = decodeJWT(t);
+      if (d) {
+        setUserId(d.userId);
+        setUsername(d.username);
       }
-    };
-
-    loadUser();
+    });
   }, []);
 
-  /* 🔐 CHECK MEMBERSHIP */
+  /* 📥 Load messages */
   useEffect(() => {
-    const checkMembership = async () => {
-      try {
-        const token = await AsyncStorage.getItem("token");
+    if (!channelId) return;
+    getMessages(channelId).then((d) =>
+      setMessages(d.messages?.messages ?? [])
+    );
+  }, [channelId]);
 
-        const res = await fetch(`${BASE_URL}/channels/${channelId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        const data = await res.json();
-
-        if (
-          res.ok &&
-          data.members?.some((m) => m.userId === userId)
-        ) {
-          setIsMember(true);
-        } else {
-          setIsMember(false);
-        }
-      } catch (err) {
-        console.log("MEMBERSHIP CHECK ERROR:", err.message);
-      }
-    };
-
-    if (userId) checkMembership();
-  }, [userId, channelId]);
-
-  /* 📥 LOAD MESSAGES */
+  /* 🔌 Socket */
   useEffect(() => {
-    if (!isMember) return;
+    if (!userId) return;
 
-    getMessages(channelId)
-      .then(setMessages)
-      .catch((err) =>
-        console.log("GET MESSAGE ERROR:", err.message)
-      );
-  }, [channelId, isMember]);
-
-  /* 🔌 SOCKET */
-  useEffect(() => {
-    if (!userId || !isMember) return;
-
-    socketRef.current = io(`${BASE_URL}`, {
+    socketRef.current = io(BASE_URL, {
       transports: ["websocket"],
       auth: { userId },
     });
@@ -116,97 +162,34 @@ export default function ChannelChat() {
     socketRef.current.emit("joinChannel", { channelId });
 
     socketRef.current.on("newMessage", (msg) => {
-      setMessages((prev) =>
-        prev.some((m) => m._id === msg._id) ? prev : [...prev, msg]
+      setMessages((p) =>
+        p.some((m) => m._id === msg._id) ? p : [...p, msg]
       );
     });
 
-    socketRef.current.on("typing", () => setTypingUser(true));
-    socketRef.current.on("stopTyping", () => setTypingUser(false));
-
-    socketRef.current.on("errorMessage", (err) => {
-      Alert.alert("Error", err.message);
+    socketRef.current.on("messageUpdated", (msg) => {
+      setMessages((p) =>
+        p.map((m) => (m._id === msg._id ? msg : m))
+      );
     });
 
-    return () => {
-      socketRef.current.disconnect();
-    };
-  }, [userId, isMember, channelId]);
+    return () => socketRef.current.disconnect();
+  }, [userId]);
 
-  /* ⬇️ AUTO SCROLL */
-  useEffect(() => {
-    listRef.current?.scrollToEnd({ animated: true });
-  }, [messages, typingUser]);
-
-  /* ✍️ HANDLE TYPING */
-  const handleTyping = (text) => {
-    setInput(text);
-
-    socketRef.current?.emit("typing", { channelId });
-
-    clearTimeout(typingTimeout.current);
-    typingTimeout.current = setTimeout(() => {
-      socketRef.current?.emit("stopTyping", { channelId });
-    }, 1200);
-  };
-
-  /* ✉️ SEND MESSAGE */
+  /* ✉️ Send */
   const sendMessage = () => {
-    if (!isMember) {
-      Alert.alert("Join required", "Please join channel to chat");
-      return;
-    }
-
     if (!input.trim()) return;
-
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     socketRef.current.emit("sendMessage", {
       channelId,
       userId,
       username,
       text: input,
+      parentId: replyTo?._id || null,
     });
 
     setInput("");
-  };
-
-  /* 💬 MESSAGE UI */
-  const renderItem = ({ item }) => {
-    const isMe = item.userId === userId;
-
-    const time = new Date(item.createdAt || Date.now()).toLocaleTimeString([], {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    return (
-      <View
-        style={[
-          styles.messageRow,
-          { justifyContent: isMe ? "flex-end" : "flex-start" },
-        ]}
-      >
-        <View
-          style={[
-            styles.bubble,
-            isMe ? styles.myBubble : styles.otherBubble,
-          ]}
-        >
-          {!isMe && (
-            <Text style={styles.usernameText}>
-              {item.username}
-            </Text>
-          )}
-
-          <Text style={styles.messageText}>
-            {item.isDeleted ? "Message deleted" : item.text}
-          </Text>
-
-          <Text style={styles.time}>{time}</Text>
-        </View>
-      </View>
-    );
+    setReplyTo(null);
   };
 
   return (
@@ -216,56 +199,51 @@ export default function ChannelChat() {
     >
       <StatusBar barStyle="light-content" />
 
-      {/* 🌈 HEADER */}
+      {/* 🔥 HEADER (OLD STYLE PRESERVED) */}
       <LinearGradient
         colors={["#7860E3", "#D66767"]}
         style={styles.header}
       >
         <Text style={styles.channelLabel}>Channel</Text>
-        <Text style={styles.channelName} numberOfLines={1}>
-          #{name}
-        </Text>
+        <Text style={styles.channelName}>#{name}</Text>
       </LinearGradient>
 
-      {/* 💬 CHAT */}
       <FlatList
-        ref={listRef}
         data={messages}
-        keyExtractor={(item) => item._id}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 16, paddingBottom: 90 }}
-        showsVerticalScrollIndicator={false}
+        keyExtractor={(i) => i._id}
+        contentContainerStyle={{ padding: 16, paddingBottom: 120 }}
+        renderItem={({ item }) => (
+          <FeedbackCard
+            item={item}
+            myId={userId}
+            socketRef={socketRef}
+            setReplyTo={setReplyTo}
+          />
+        )}
       />
 
-      {/* ✍️ TYPING */}
-      {typingUser && (
-        <Text style={styles.typing}>💬 Someone is typing…</Text>
+      {replyTo && (
+        <View style={styles.replyPreview}>
+          <Text style={styles.replyText}>
+            Replying to {replyTo.username}
+          </Text>
+          <Pressable onPress={() => setReplyTo(null)}>
+            <Text style={styles.replyClose}>✕</Text>
+          </Pressable>
+        </View>
       )}
 
-      {/* ⌨️ INPUT */}
       <View style={styles.inputBar}>
         <TextInput
           value={input}
-          onChangeText={handleTyping}
-          placeholder={
-            isMember
-              ? "Write anonymously…"
-              : "Join channel to chat"
-          }
-          editable={isMember}
-          style={[
-            styles.input,
-            { opacity: isMember ? 1 : 0.5 },
-          ]}
+          onChangeText={setInput}
+          placeholder="Write feedback…"
+          style={styles.input}
         />
-
         <Pressable onPress={sendMessage}>
           <LinearGradient
             colors={["#7860E3", "#D66767"]}
-            style={[
-              styles.sendBtn,
-              { opacity: input.trim() ? 1 : 0.4 },
-            ]}
+            style={styles.sendBtn}
           >
             <Text style={styles.sendText}>➤</Text>
           </LinearGradient>
@@ -275,95 +253,128 @@ export default function ChannelChat() {
   );
 }
 
-/* 🎨 STYLES */
+/* =====================
+   STYLES
+===================== */
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9f9fb",
-  },
+  container: { flex: 1, backgroundColor: "#f3f4f6" },
 
   header: {
-    paddingTop: 50,
-    paddingBottom: 16,
+    paddingTop: 56,
+    paddingBottom: 20,
     paddingHorizontal: 20,
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
   },
 
   channelLabel: {
-    color: "rgba(255,255,255,0.8)",
+    color: "rgba(255,255,255,0.85)",
     fontSize: 13,
-    fontWeight: "600",
-    textTransform: "uppercase",
+    fontFamily: "Poppins-Medium",
   },
 
   channelName: {
     color: "#fff",
-    fontSize: 26,
-    fontWeight: "900",
-    marginTop: 4,
+    fontSize: 28,
+    fontFamily: "Poppins-Bold",
   },
 
-  messageRow: {
-    flexDirection: "row",
-    marginBottom: 10,
+  card: {
+    width: "92%",
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    backgroundColor: "#fff",
+    elevation: 3,
   },
 
-  bubble: {
-    maxWidth: "75%",
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 18,
+  myCard: {
+    alignSelf: "flex-end",
+    backgroundColor: "#dcfce7",
   },
 
-  myBubble: {
-    backgroundColor: "#7feceb7d",
-    borderTopRightRadius: 4,
+  otherCard: {
+    alignSelf: "flex-start",
   },
 
-  otherBubble: {
-    backgroundColor: "#e5e7eb",
-    borderTopLeftRadius: 4,
+  username: {
+    fontSize: 13,
+    fontFamily: "Poppins-SemiBold",
+    marginBottom: 6,
   },
 
-  usernameText: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: "#555",
-    marginBottom: 2,
-  },
-
-  messageText: {
-    fontSize: 16,
+  message: {
+    fontSize: 15,
     lineHeight: 22,
-    color: "#000",
+    fontFamily: "Poppins-Regular",
+  },
+
+  divider: {
+    height: 1,
+    backgroundColor: "#e5e7eb",
+    marginVertical: 10,
+  },
+
+  footer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+
+  actionBtn: {
+    backgroundColor: "#f3f4f6",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+
+  actionText: {
+    fontSize: 12,
+    fontFamily: "Poppins-Medium",
+  },
+
+  helpfulBadge: {
+    backgroundColor: "#bbf7d0",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+
+  helpfulText: {
+    fontSize: 11,
+    fontFamily: "Poppins-Bold",
+    color: "#166534",
   },
 
   time: {
-    fontSize: 10,
-    color: "#888",
-    alignSelf: "flex-end",
-    marginTop: 4,
+    fontSize: 11,
+    color: "#6b7280",
   },
 
-  typing: {
-    marginLeft: 20,
-    marginBottom: 6,
-    color: "#777",
-    fontStyle: "italic",
+  replyPreview: {
+    backgroundColor: "#eef2ff",
+    padding: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
   },
+
+  replyText: { fontFamily: "Poppins-Medium" },
+
+  replyClose: { fontFamily: "Poppins-Bold", color: "red" },
 
   inputBar: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    flexDirection: "row",
     padding: 12,
-    alignItems: "center",
-    borderTopWidth: 1,
-    borderColor: "#eee",
     backgroundColor: "#fff",
+    flexDirection: "row",
   },
 
   input: {
@@ -371,8 +382,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f2f2f2",
     borderRadius: 24,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
+    fontFamily: "Poppins-Regular",
   },
 
   sendBtn: {
@@ -387,6 +397,6 @@ const styles = StyleSheet.create({
   sendText: {
     color: "#fff",
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: "Poppins-Bold",
   },
 });
